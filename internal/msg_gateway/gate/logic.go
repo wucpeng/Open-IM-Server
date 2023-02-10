@@ -42,8 +42,7 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 		ws.sendErrMsg(conn, 201, err.Error(), m.ReqIdentifier, m.MsgIncr, m.OperationID)
 		return
 	}
-	log.NewInfo(m.OperationID, "Basic Info Authentication Success", m.SendID, m.MsgIncr, m.ReqIdentifier, time.Since(t1))
-
+	log.NewInfo(m.OperationID, "Basic Info Authentication Success", m.SendID, m.MsgIncr, m.ReqIdentifier)
 	switch m.ReqIdentifier {
 	case constant.WSGetNewestSeq:
 		//log.NewInfo(m.OperationID, "getSeqReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)

@@ -9,10 +9,10 @@ import (
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbChat "Open_IM/pkg/proto/msg"
 	sdk_ws "Open_IM/pkg/proto/sdk_ws"
-	"bytes"
+	//"bytes"
 	"context"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
+	//"io/ioutil"
 	"net/http"
 	"strings"
 	"Open_IM/pkg/utils"
@@ -78,9 +78,9 @@ type GroupCalendarReq struct {
 	GroupID     string `json:"groupID" binding:"required"`
 }
 func GetGroupCalendar(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 
 	params := GroupCalendarReq{}
 	if err := c.BindJSON(&params); err != nil {
@@ -138,10 +138,9 @@ type GroupForwardReq struct {
 	PageSize    int `json:"pageSize"`
 }
 func GetGroupForward(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
-
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 	params := GroupForwardReq{}
 	if err := c.BindJSON(&params); err != nil {
 		log.NewError("0", "BindJSON failed ", err.Error())
@@ -243,10 +242,9 @@ type GroupRangeReq struct {
 	EndTime     int64 `json:"endTime"`
 }
 func GetGroupRange(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
-
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 	params := GroupRangeReq{}
 	if err := c.BindJSON(&params); err != nil {
 		log.NewError("0", "BindJSON failed ", err.Error())
@@ -321,10 +319,9 @@ type UserCalendarReq struct {
 	SenderID    string `json:"senderID"  binding:"required"`
 }
 func GetUserCalendar(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
-
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 	params := UserCalendarReq{}
 	if err := c.BindJSON(&params); err != nil {
 		log.NewError("0", "BindJSON failed ", err.Error())
@@ -366,10 +363,9 @@ type UserForwardReq struct {
 	PageSize    int `json:"pageSize"`
 }
 func GetUserForward(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
-
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 	params := UserForwardReq{}
 	if err := c.BindJSON(&params); err != nil {
 		log.NewError("0", "BindJSON failed ", err.Error())
@@ -471,9 +467,9 @@ type UserRangeReq struct {
 	PageSize    int `json:"pageSize"`
 }
 func GetUserRange(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 
 	params := UserRangeReq{}
 	if err := c.BindJSON(&params); err != nil {
@@ -542,9 +538,9 @@ type GroupAtReq struct {
 	EndTime     int64 `json:"endTime"`
 }
 func GetGroupAt(c *gin.Context) {
-	bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
+	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
+	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
+	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
 
 	params := GroupAtReq{}
 	if err := c.BindJSON(&params); err != nil {
