@@ -52,6 +52,7 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 		//log.NewInfo(m.OperationID, "sendMsgReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.sendMsgReq(conn, &m)
 		promePkg.PromeInc(promePkg.MsgRecvTotalCounter)
+		log.NewError("", "WSSendMsg", time.Since(t1))
 	case constant.WSSendSignalMsg:
 		//log.NewInfo(m.OperationID, "sendSignalMsgReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.sendSignalMsgReq(conn, &m)
@@ -176,6 +177,7 @@ func (ws *WServer) pullMsgBySeqListResp(conn *UserConn, m *Req, pb *sdk_ws.PullM
 }
 
 func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
+	t1 := time.Now()
 	sendMsgAllCountLock.Lock()
 	sendMsgAllCount++
 	sendMsgAllCountLock.Unlock()
@@ -198,7 +200,8 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			ws.sendMsgResp(conn, m, nReply)
 			return
 		}
-
+		log.NewError(m.OperationID, "sendResult", time.Since(t1))
+		t1 = time.Now()
 		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, m.OperationID)
 		if etcdConn == nil {
 			errMsg := m.OperationID + "getcdv3.GetDefaultConn == nil"
@@ -208,6 +211,8 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			ws.sendMsgResp(conn, m, nReply)
 			return
 		}
+		log.NewError(m.OperationID, "sendResult2", time.Since(t1))
+		t1 = time.Now()
 		client := pbChat.NewMsgClient(etcdConn)
 		reply, err := client.SendMsg(context.Background(), &pbData)
 		if err != nil {
@@ -219,7 +224,7 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			log.NewInfo(pbData.OperationID, "rpc call success to sendMsgReq", reply.String())
 			ws.sendMsgResp(conn, m, reply)
 		}
-
+		log.NewError(m.OperationID, "sendResult3", time.Since(t1))
 	} else {
 		nReply.ErrCode = errCode
 		nReply.ErrMsg = errMsg

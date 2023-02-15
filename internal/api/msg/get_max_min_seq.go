@@ -177,7 +177,6 @@ func GetGroupForward(c *gin.Context) {
 		})
 		return
 	}
-
 	if params.TimeDesc == 1 { //倒序
 		reverseSlice(messages)
 	}
@@ -189,11 +188,10 @@ func GetGroupForward(c *gin.Context) {
 				break
 			}
 		}
-
 		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
 		if i != -1 {
 			if params.Forward == 1 { //下一页
-				len3 := i+params.PageSize
+				len3 := i+params.PageSize + 1
 				if len3 > len(messages) {
 					len3 = len(messages)
 				}
@@ -406,7 +404,7 @@ func GetUserForward(c *gin.Context) {
 		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
 		if i != -1 {
 			if params.Forward == 1 { //下一页
-				len3 := i+params.PageSize
+				len3 := i+params.PageSize + 1
 				if len3 > len(messages) {
 					len3 = len(messages)
 				}

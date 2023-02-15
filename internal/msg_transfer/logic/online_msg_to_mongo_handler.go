@@ -76,22 +76,21 @@ func (mc *OnlineHistoryMongoConsumerHandler) handleChatWs2Mongo(cMsg *sarama.Con
 			if unexistSeqList, err := db.DB.DelMsgBySeqList(DeleteMessageTips.UserID, DeleteMessageTips.SeqList, v.OperationID); err != nil {
 				log.NewError(v.OperationID, utils.GetSelfFuncName(), "DelMsgBySeqList args: ", DeleteMessageTips.UserID, DeleteMessageTips.SeqList, v.OperationID, err.Error(), unexistSeqList)
 			}
+		} else if v.MsgData.ContentType == constant.AdvancedRevoke {
+			//撤回消息 清理数据
+			revokeMessage := new(MessageRevoked)
+			if err := utils.JsonStringToStruct(string(v.MsgData.Content), revokeMessage); err != nil {
+				log.Error(msgFromMQ.TriggerID, "content to Data struct  err", err.Error())
+				return
+			}
+			//log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", revokeMessage, revokeMessage.ClientMsgID)
+			seqMsg, err := db.DB.GetMsgById(msgFromMQ.AggregationID, revokeMessage.ClientMsgID, v.OperationID)
+			//log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", seqMsg, seqMsg.Seq, err)
+			if err == nil {
+				seq := []uint32{seqMsg.Seq}
+				db.DB.DelMsgBySeqList(msgFromMQ.AggregationID, seq, v.OperationID)
+			}
 		}
-		//else if v.MsgData.ContentType == constant.AdvancedRevoke {
-		//	//撤回消息 清理数据
-		//	revokeMessage := new(MessageRevoked)
-		//	if err := utils.JsonStringToStruct(string(v.MsgData.Content), revokeMessage); err != nil {
-		//		log.Error(msgFromMQ.TriggerID, "content to Data struct  err", err.Error())
-		//		return
-		//	}
-		//	log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", revokeMessage, revokeMessage.ClientMsgID)
-		//	seqMsg, err := db.DB.GetMsgById(msgFromMQ.AggregationID, revokeMessage.ClientMsgID, v.OperationID)
-		//	log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", seqMsg, seqMsg.Seq, err)
-		//	if err == nil {
-		//		seq := []uint32{seqMsg.Seq}
-		//		db.DB.DelMsgBySeqList(msgFromMQ.TriggerID, seq, v.OperationID)
-		//	}
-		//}
 	}
 }
 

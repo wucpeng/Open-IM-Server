@@ -237,7 +237,7 @@ type ChatLog struct {
 	SessionType      int32     `gorm:"column:session_type;index:session_type,priority:2;index:session_type_alone" json:"sessionType"`
 	MsgFrom          int32     `gorm:"column:msg_from" json:"msgFrom"`
 	ContentType      int32     `gorm:"column:content_type;index:content_type,priority:2;index:content_type_alone" json:"contentType"`
-	Content          string    `gorm:"column:content;type:varchar(3000)" json:"content"`
+	Content          string    `gorm:"column:content;type:varchar(9999)" json:"content"`
 	Status           int32     `gorm:"column:status" json:"status"`
 	SendTime         time.Time `gorm:"column:send_time;index:sendTime;index:content_type,priority:1;index:session_type,priority:1;index:recv_id,priority:1;index:send_id,priority:1" json:"sendTime"`
 	CreateTime       time.Time `gorm:"column:create_time" json:"createTime"`

@@ -87,7 +87,7 @@ func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
 						}
 					}
 				}
-				log.Info(triggerID, "msg storage=", len(storageMsgList), "push=", len(notStoragePushMsgList))
+				//log.Info(triggerID, "msg storage=", len(storageMsgList), "push=", len(notStoragePushMsgList))
 				if len(storageMsgList) > 0 {
 					err, lastSeq := saveUserChatList(msgChannelValue.aggregationID, storageMsgList, triggerID)
 					if err != nil {

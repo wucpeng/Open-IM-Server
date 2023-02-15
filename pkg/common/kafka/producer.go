@@ -44,7 +44,7 @@ func NewKafkaProducer(addr []string, topic string) *Producer {
 }
 
 func (p *Producer) SendMessage(m proto.Message, key string, operationID string) (int32, int64, error) {
-	log.Info(operationID, "SendMessage", "key ", p.topic, key, p.producer)
+	//log.Info(operationID, "SendMessage", "key ", p.topic, key, p.producer)
 	kMsg := &sarama.ProducerMessage{}
 	kMsg.Topic = p.topic
 	kMsg.Key = sarama.StringEncoder(key)

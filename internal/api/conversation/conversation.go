@@ -184,7 +184,7 @@ func GetAllConversations(c *gin.Context) {
 	if err := utils.CopyStructFields(&resp.Conversations, respPb.Conversations); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed, ", err.Error())
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp)
+	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp)
 	c.JSON(http.StatusOK, resp)
 }
 

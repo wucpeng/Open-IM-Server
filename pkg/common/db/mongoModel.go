@@ -410,7 +410,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 		return nil, utils.Wrap(err, "")
 	}
 	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
@@ -427,6 +427,12 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
 				return nil, err
 			}
+			if msg.Status == constant.MsgDeleted {
+				continue
+			}
+			if groupID != msg.GroupID {
+				continue
+			}
 			if startTime != 0 && msg.SendTime < startTime {
 				continue
 			}
@@ -434,12 +440,14 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 				break
 			}
 
-			if groupID == msg.GroupID && (msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || (msg.ContentType > 1500 && msg.ContentType < 1600)) {
-				//log.NewInfo(operationID, utils.GetSelfFuncName(), string(msg.Content))
+			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
+			   // || (msg.ContentType > 1500 && msg.ContentType < 1600) {
+				log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
 				seqMsg = append(seqMsg, msg)
 			}
 		}
 	}
+	log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
 	return seqMsg, nil
 }
 
@@ -470,14 +478,23 @@ func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int
 				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
 				return nil, err
 			}
+			if msg.Status == constant.MsgDeleted {
+				continue
+			}
+			if msg.SessionType != constant.SingleChatType {
+				continue
+			}
 			if startTime != 0 && msg.SendTime < startTime {
 				continue
 			}
 			if endTime != 0 && msg.SendTime > endTime {
 				break
 			}
-
-			if (msg.SessionType == constant.SingleChatType && ((msg.SendID == userId && msg.RecvID == uid) || (msg.SendID == uid && msg.RecvID == userId))) && (msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText) {
+			isSingle := (msg.SendID == userId && msg.RecvID == uid) || (msg.SendID == uid && msg.RecvID == userId)
+			if !isSingle {
+				continue
+			}
+			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
 				//log.NewInfo(operationID, utils.GetSelfFuncName(), string(msg.Content))
 				seqMsg = append(seqMsg, msg)
 			}

@@ -19,7 +19,7 @@ func SetConversation(conversation db.Conversation) (bool, error) {
 		isUpdate = true
 		return isUpdate, db.DB.MysqlDB.DefaultGormDB().Model(conversation).Where("owner_user_id = ? and conversation_id = ?", conversation.OwnerUserID, conversation.ConversationID).
 			Updates(map[string]interface{}{"recv_msg_opt": conversation.RecvMsgOpt, "is_pinned": conversation.IsPinned, "is_private_chat": conversation.IsPrivateChat,
-				"group_at_type": conversation.GroupAtType, "is_not_in_group": conversation.IsNotInGroup}).Error
+				"group_at_type": conversation.GroupAtType, "is_not_in_group": conversation.IsNotInGroup, "ex": conversation.Ex}).Error
 	}
 }
 func SetOneConversation(conversation db.Conversation) error {
@@ -101,6 +101,14 @@ func UpdateColumnsConversations(ownerUserIDList []string, conversationID string,
 
 func GetConversationIDListByUserID(userID string) ([]string, error) {
 	var IDList []string
-	err := db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Where("owner_user_id=?", userID).Pluck("conversation_id", &IDList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Where("is_not_in_group=0 and owner_user_id=?", userID).Pluck("conversation_id", &IDList).Error
 	return IDList, err
+}
+//is_not_in_group=0 and
+
+func DeleteConversationByUserId(userID, conversationID string) error {
+	log.NewError(userID, utils.GetSelfFuncName(), userID, conversationID)
+	//err := db.DB.MysqlDB.DefaultGormDB().Table("conversations").Where("owner_user_id=? and conversation_id=?", userID, conversationID).Delete(db.Conversation{}).Error
+	con := db.Conversation{ConversationID: conversationID, OwnerUserID: userID}
+	return db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Delete(&con).Error
 }

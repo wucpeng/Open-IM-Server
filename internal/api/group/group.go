@@ -751,8 +751,7 @@ func SetGroupInfo(c *gin.Context) {
 		return
 	}
 
-	log.NewInfo(req.OperationID, "SetGroupInfo args ", req.String())
-
+	//log.NewInfo(req.OperationID, "SetGroupInfo args ", req.String())
 	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImGroupName, req.OperationID)
 	if etcdConn == nil {
 		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"

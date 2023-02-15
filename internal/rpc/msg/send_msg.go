@@ -155,14 +155,15 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 	case constant.SuperGroupChatType:
 		groupInfo, err := rocksCache.GetGroupInfoFromCache(data.MsgData.GroupID)
 		if err != nil {
-			return false, 201, err.Error(), nil
+			//return false, 201, err.Error(), nil
+			return false, 10010, err.Error(), nil
 		}
 		if data.MsgData.ContentType == constant.AdvancedRevoke {
 			revokeMessage := new(MessageRevoked)
 			err := utils.JsonStringToStruct(string(data.MsgData.Content), revokeMessage)
 			if err != nil {
 				log.Error(data.OperationID, "json unmarshal err:", err.Error())
-				return false, 201, err.Error(), nil
+				return false, 10010, err.Error(), nil
 			}
 			//log.Info(data.OperationID, "revoke message is", *revokeMessage)
 
@@ -193,7 +194,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 			if err != nil {
 				errMsg := data.OperationID + err.Error()
 				log.NewError(data.OperationID, errMsg)
-				return false, 201, errMsg, nil
+				return false, 10010, errMsg, nil
 			}
 			if !token_verify.IsManagerUserID(data.MsgData.SendID) {
 				if data.MsgData.ContentType <= constant.NotificationEnd && data.MsgData.ContentType >= constant.NotificationBegin {
@@ -201,7 +202,8 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 				}
 				if !utils.IsContain(data.MsgData.SendID, userIDList) {
 					//return returnMsg(&replay, pb, 202, "you are not in group", "", 0)
-					return false, 202, "you are not in group", nil
+					//return false, 202, "you are not in group", nil
+					return false, 10007, "you are not in group", nil
 				}
 			}
 			return true, 0, "", userIDList
@@ -268,8 +270,8 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 	}
 	t1 := time.Now()
 	rpc.encapsulateMsgData(pb.MsgData) // append  pb.MsgData.Options
-
 	msgToMQSingle := pbChat.MsgDataToMQ{Token: pb.Token, OperationID: pb.OperationID, MsgData: pb.MsgData}
+	log.NewError(pb.OperationID, "SendMsg 1", time.Since(t1))
 	// callback
 	t1 = time.Now()
 	callbackResp := callbackWordFilter(pb)
@@ -282,6 +284,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		}
 		return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0)
 	}
+	log.NewError(pb.OperationID, "SendMsg 2", time.Since(t1))
 	switch pb.MsgData.SessionType {
 	case constant.SingleChatType:
 		promePkg.PromeInc(promePkg.SingleChatMsgRecvSuccessCounter)
@@ -341,6 +344,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		return returnMsg(&replay, pb, 0, "", msgToMQSingle.MsgData.ServerMsgID, msgToMQSingle.MsgData.SendTime)
 	case constant.GroupChatType:
 		// callback
+		t1 = time.Now()
 		promePkg.PromeInc(promePkg.GroupChatMsgRecvSuccessCounter)
 		callbackResp := callbackBeforeSendGroupMsg(pb)
 		if callbackResp.ErrCode != 0 {
@@ -354,12 +358,14 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0)
 		}
+		log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
 		var memberUserIDList []string
 		if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0)
 		}
 		//log.Info(pb.OperationID, "GetGroupAllMember userID list", memberUserIDList, "len: ", len(memberUserIDList))
+		t1 = time.Now()
 		var addUidList []string
 		switch pb.MsgData.ContentType {
 		case constant.MemberKickedNotification:
@@ -399,7 +405,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 				//log.Error(pb.OperationID, utils.GetSelfFuncName(), "GetGroupMemberInfoByGroupIDAndUserID: ", MuteEndTime, opInfo.MuteEndTime, time.Now().Unix(), opInfo.UserID)
 			}
 		}
-
+		log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
 		m := make(map[string][]string, 2)
 		m[constant.OnlineStatus] = memberUserIDList
 		t1 = time.Now()
@@ -424,6 +430,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 				go rpc.sendMsgToGroupOptimization(v[split*(len(v)/split):], tmp, k, &sendTag, &wg)
 			}
 		}
+		log.NewError(pb.OperationID, "SendMsg 4", time.Since(t1))
 		//log.Debug(pb.OperationID, "send msg cost time22 ", time.Since(t1), pb.MsgData.ClientMsgID, "uidList : ", len(addUidList))
 		//wg.Add(1)
 		//go rpc.sendMsgToGroup(addUidList, *pb, constant.OnlineStatus, &sendTag, &wg)
@@ -434,6 +441,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		if callbackResp.ErrCode != 0 {
 			log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendGroupMsg resp: ", callbackResp)
 		}
+		log.NewError(pb.OperationID, "SendMsg 5", time.Since(t1))
 		if !sendTag {
 			log.NewWarn(pb.OperationID, "send tag is ", sendTag)
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)

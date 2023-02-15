@@ -222,7 +222,9 @@ func (s *groupServer) CreateGroup(ctx context.Context, req *pbGroup.CreateGroupR
 					log.NewWarn(req.OperationID, utils.GetSelfFuncName(), userID, err.Error())
 				}
 			}
-			chat.GroupCreatedNotification(req.OperationID, req.OpUserID, groupId, okUserIDList)
+			if req.OperationID != "schoolInit" {
+				chat.GroupCreatedNotification(req.OperationID, req.OpUserID, groupId, okUserIDList)
+			}
 		} else {
 			for _, userID := range okUserIDList {
 				if err := rocksCache.DelJoinedSuperGroupIDListFromCache(userID); err != nil {
@@ -738,7 +740,6 @@ func (s *groupServer) KickGroupMember(ctx context.Context, req *pbGroup.KickGrou
 				chat.SuperGroupNotification(req.OperationID, v, v)
 			}
 		}()
-
 	}
 
 	log.NewInfo(req.OperationID, "GetGroupMemberList rpc return ", resp.String())
@@ -1070,6 +1071,7 @@ func (s *groupServer) QuitGroup(ctx context.Context, req *pbGroup.QuitGroupReq) 
 		c.ConversationType = constant.GroupChatType
 		c.GroupID = req.GroupID
 		c.IsNotInGroup = true
+		c.Ex = "owner_quit"
 		reqPb.Conversation = &c
 		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
 		if etcdConn == nil {
@@ -1084,6 +1086,12 @@ func (s *groupServer) QuitGroup(ctx context.Context, req *pbGroup.QuitGroupReq) 
 		} else {
 			log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "SetConversation success", respPb.String())
 		}
+		//err = imdb.DeleteConversationByUserId(req.OpUserID, c.ConversationID)
+		//if err != nil {
+		//	log.NewError(req.OperationID, utils.GetSelfFuncName(), "DeleteConversationByUserId failed, ", reqPb.String(), err.Error())
+		//} else {
+		//	rocksCache.DelUserConversationIDListFromCache(req.OpUserID)
+		//}
 	} else {
 		okUserIDList := []string{req.OpUserID}
 		if err := db.DB.RemoverUserFromSuperGroup(req.GroupID, okUserIDList); err != nil {

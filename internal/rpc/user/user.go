@@ -193,7 +193,7 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 }
 
 func (s *userServer) GetAllConversations(ctx context.Context, req *pbUser.GetAllConversationsReq) (*pbUser.GetAllConversationsResp, error) {
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
+	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
 	resp := &pbUser.GetAllConversationsResp{Conversations: []*pbConversation.Conversation{}}
 	conversations, err := rocksCache.GetUserAllConversationList(req.OwnerUserID)
 	//log.NewDebug(req.OperationID, "conversations: ", conversations)
@@ -205,7 +205,7 @@ func (s *userServer) GetAllConversations(ctx context.Context, req *pbUser.GetAll
 	if err = utils.CopyStructFields(&resp.Conversations, conversations); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields error", err.Error())
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "rpc return", resp.String())
+	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "rpc return", resp.String())
 	resp.CommonResp = &pbUser.CommonResp{}
 	return resp, nil
 }
@@ -223,7 +223,7 @@ func (s *userServer) GetConversation(ctx context.Context, req *pbUser.GetConvers
 	if err := utils.CopyStructFields(resp.Conversation, &conversation); err != nil {
 		log.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields error", conversation, err.Error())
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
+	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
 	resp.CommonResp = &pbUser.CommonResp{}
 	return resp, nil
 }
@@ -241,7 +241,7 @@ func (s *userServer) GetConversations(ctx context.Context, req *pbUser.GetConver
 	if err := utils.CopyStructFields(&resp.Conversations, conversations); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", conversations, err.Error())
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
+	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
 	resp.CommonResp = &pbUser.CommonResp{}
 	return resp, nil
 }
@@ -299,7 +299,7 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 			return resp, nil
 		}
 	} else {
-		//chat.ConversationChangeNotification(req.OperationID, req.Conversation.OwnerUserID) //deleted by wg 2022-12-27
+		chat.ConversationChangeNotification(req.OperationID, req.Conversation.OwnerUserID) //deleted by wg 2022-12-27
 	}
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "rpc return", resp.String())
 	resp.CommonResp = &pbUser.CommonResp{}
