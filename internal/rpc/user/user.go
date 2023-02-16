@@ -216,7 +216,7 @@ func (s *userServer) GetConversation(ctx context.Context, req *pbUser.GetConvers
 	conversation, err := rocksCache.GetConversationFromCache(req.OwnerUserID, req.ConversationID)
 	//log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "conversation", conversation)
 	if err != nil {
-		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetConversation error", err.Error())
+		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetConversation error", req.OwnerUserID, req.ConversationID, err.Error())
 		resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 		return resp, nil
 	}

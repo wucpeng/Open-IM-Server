@@ -6,7 +6,9 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/http"
+	"Open_IM/pkg/common/log"
 	pbChat "Open_IM/pkg/proto/msg"
+	"Open_IM/pkg/utils"
 	http2 "net/http"
 )
 
@@ -141,7 +143,7 @@ func callbackAfterSendGroupMsg(msg *pbChat.SendMsgReq) cbApi.CommonCallbackResp 
 		GroupID:           msg.MsgData.GroupID,
 	}
 	resp := &cbApi.CallbackAfterSendGroupMsgResp{CommonCallbackResp: &callbackResp}
-	//defer log.NewDebug(msg.OperationID, utils.GetSelfFuncName(), req, *resp)
+	defer log.NewError(msg.OperationID, utils.GetSelfFuncName(), req, *resp)
 	if err := http.PostReturn(config.Config.Callback.CallbackUrl, req, resp, config.Config.Callback.CallbackAfterSendGroupMsg.CallbackTimeOut); err != nil {
 		callbackResp.ErrCode = http2.StatusInternalServerError
 		callbackResp.ErrMsg = err.Error()

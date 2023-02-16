@@ -11,7 +11,7 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	cacheRpc "Open_IM/pkg/proto/cache"
-	pbConversation "Open_IM/pkg/proto/conversation"
+	//pbConversation "Open_IM/pkg/proto/conversation"
 	pbChat "Open_IM/pkg/proto/msg"
 	pbPush "Open_IM/pkg/proto/push"
 	//pbRelay "Open_IM/pkg/proto/relay"
@@ -334,12 +334,13 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			}
 		}
 		// callback
-		t1 = time.Now()
-		callbackResp = callbackAfterSendSingleMsg(pb)
-		//log.Info(pb.OperationID, "callbackAfterSendSingleMsg ", " cost time: ", time.Since(t1))
-		if callbackResp.ErrCode != 0 {
-			log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendSingleMsg resp: ", callbackResp)
-		}
+		//t1 = time.Now()
+		//callbackResp = callbackAfterSendSingleMsg(pb)
+		////log.Info(pb.OperationID, "callbackAfterSendSingleMsg ", " cost time: ", time.Since(t1))
+		//if callbackResp.ErrCode != 0 {
+		//	log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendSingleMsg resp: ", callbackResp)
+		//}
+		go callbackAfterSendSingleMsg(pb)
 		promePkg.PromeInc(promePkg.SingleChatMsgProcessSuccessCounter)
 		return returnMsg(&replay, pb, 0, "", msgToMQSingle.MsgData.ServerMsgID, msgToMQSingle.MsgData.SendTime)
 	case constant.GroupChatType:
@@ -437,78 +438,80 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		wg.Wait()
 		t1 = time.Now()
 		// callback
-		callbackResp = callbackAfterSendGroupMsg(pb)
-		if callbackResp.ErrCode != 0 {
-			log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendGroupMsg resp: ", callbackResp)
-		}
+		//callbackResp = callbackAfterSendGroupMsg(pb)
+		//if callbackResp.ErrCode != 0 {
+		//	log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendGroupMsg resp: ", callbackResp)
+		//}
 		log.NewError(pb.OperationID, "SendMsg 5", time.Since(t1))
 		if !sendTag {
 			log.NewWarn(pb.OperationID, "send tag is ", sendTag)
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, 201, "kafka send msg err", "", 0)
 		} else {
-			if pb.MsgData.ContentType == constant.AtText {
-				go func() {
-					var conversationReq pbConversation.ModifyConversationFieldReq
-					var tag bool
-					var atUserID []string
-					conversation := pbConversation.Conversation{
-						OwnerUserID:      pb.MsgData.SendID,
-						ConversationID:   utils.GetConversationIDBySessionType(pb.MsgData.GroupID, constant.GroupChatType),
-						ConversationType: constant.GroupChatType,
-						GroupID:          pb.MsgData.GroupID,
-					}
-					conversationReq.Conversation = &conversation
-					conversationReq.OperationID = pb.OperationID
-					conversationReq.FieldType = constant.FieldGroupAtType
-					tagAll := utils.IsContain(constant.AtAllString, pb.MsgData.AtUserIDList)
-					if tagAll {
-						atUserID = utils.DifferenceString([]string{constant.AtAllString}, pb.MsgData.AtUserIDList)
-						if len(atUserID) == 0 { //just @everyone
-							conversationReq.UserIDList = memberUserIDList
-							conversation.GroupAtType = constant.AtAll
-						} else { //@Everyone and @other people
-							conversationReq.UserIDList = atUserID
-							conversation.GroupAtType = constant.AtAllAtMe
-							tag = true
-						}
-					} else {
-						conversationReq.UserIDList = pb.MsgData.AtUserIDList
-						conversation.GroupAtType = constant.AtMe
-					}
-					etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
-					if etcdConn == nil {
-						errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
-						log.NewError(pb.OperationID, errMsg)
-						return
-					}
-					client := pbConversation.NewConversationClient(etcdConn)
-					conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
-					if err != nil {
-						log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
-					} else if conversationReply.CommonResp.ErrCode != 0 {
-						log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), conversationReply.String())
-					}
-					if tag {
-						conversationReq.UserIDList = utils.DifferenceString(atUserID, memberUserIDList)
-						conversation.GroupAtType = constant.AtAll
-						etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
-						if etcdConn == nil {
-							errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
-							log.NewError(pb.OperationID, errMsg)
-							return
-						}
-						client := pbConversation.NewConversationClient(etcdConn)
-						conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
-						if err != nil {
-							log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
-						} else if conversationReply.CommonResp.ErrCode != 0 {
-							log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), conversationReply.String())
-						}
-					}
-				}()
-			}
+			//deleted by wg 2023-02-15 不使用OpenIM定义的 @功能
+			//if pb.MsgData.ContentType == constant.AtText {
+			//	go func() {
+			//		var conversationReq pbConversation.ModifyConversationFieldReq
+			//		var tag bool
+			//		var atUserID []string
+			//		conversation := pbConversation.Conversation{
+			//			OwnerUserID:      pb.MsgData.SendID,
+			//			ConversationID:   utils.GetConversationIDBySessionType(pb.MsgData.GroupID, constant.GroupChatType),
+			//			ConversationType: constant.GroupChatType,
+			//			GroupID:          pb.MsgData.GroupID,
+			//		}
+			//		conversationReq.Conversation = &conversation
+			//		conversationReq.OperationID = pb.OperationID
+			//		conversationReq.FieldType = constant.FieldGroupAtType
+			//		tagAll := utils.IsContain(constant.AtAllString, pb.MsgData.AtUserIDList)
+			//		if tagAll {
+			//			atUserID = utils.DifferenceString([]string{constant.AtAllString}, pb.MsgData.AtUserIDList)
+			//			if len(atUserID) == 0 { //just @everyone
+			//				conversationReq.UserIDList = memberUserIDList
+			//				conversation.GroupAtType = constant.AtAll
+			//			} else { //@Everyone and @other people
+			//				conversationReq.UserIDList = atUserID
+			//				conversation.GroupAtType = constant.AtAllAtMe
+			//				tag = true
+			//			}
+			//		} else {
+			//			conversationReq.UserIDList = pb.MsgData.AtUserIDList
+			//			conversation.GroupAtType = constant.AtMe
+			//		}
+			//		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
+			//		if etcdConn == nil {
+			//			errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
+			//			log.NewError(pb.OperationID, errMsg)
+			//			return
+			//		}
+			//		client := pbConversation.NewConversationClient(etcdConn)
+			//		conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
+			//		if err != nil {
+			//			log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
+			//		} else if conversationReply.CommonResp.ErrCode != 0 {
+			//			log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), conversationReply.String())
+			//		}
+			//		if tag {
+			//			conversationReq.UserIDList = utils.DifferenceString(atUserID, memberUserIDList)
+			//			conversation.GroupAtType = constant.AtAll
+			//			etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
+			//			if etcdConn == nil {
+			//				errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
+			//				log.NewError(pb.OperationID, errMsg)
+			//				return
+			//			}
+			//			client := pbConversation.NewConversationClient(etcdConn)
+			//			conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
+			//			if err != nil {
+			//				log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
+			//			} else if conversationReply.CommonResp.ErrCode != 0 {
+			//				log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), conversationReply.String())
+			//			}
+			//		}
+			//	}()
+			//}
 			//log.Debug(pb.OperationID, "send msg cost time3 ", time.Since(t1), pb.MsgData.ClientMsgID)
+			go callbackAfterSendGroupMsg(pb)
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessSuccessCounter)
 			return returnMsg(&replay, pb, 0, "", msgToMQSingle.MsgData.ServerMsgID, msgToMQSingle.MsgData.SendTime)
 		}

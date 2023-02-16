@@ -101,7 +101,7 @@ func UpdateColumnsConversations(ownerUserIDList []string, conversationID string,
 
 func GetConversationIDListByUserID(userID string) ([]string, error) {
 	var IDList []string
-	err := db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Where("is_not_in_group=0 and owner_user_id=?", userID).Pluck("conversation_id", &IDList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Where("owner_user_id=?", userID).Pluck("conversation_id", &IDList).Error
 	return IDList, err
 }
 //is_not_in_group=0 and
