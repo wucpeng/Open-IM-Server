@@ -727,14 +727,14 @@ credential: #腾讯cos，发送图片、视频、文件时需要，请自行申�
   #    isDistributedMod: false # 是否分布式多硬盘部署 默认docker-compose中为false
   ali: # ali oss
     regionID: "oss-cn-hangzhou"
-    accessKeyID: "LTAI5tEAS5qKAnhCY6orA5F5"
-    accessKeySecret: "DFAxBgBebJKdY33Ern9euQnfUdSQfS"
-    stsEndpoint: "sts.cn-hangzhou.aliyun.com"
-    ossEndpoint: "oss-cn-hangzhou.aliyuncs.com"
-    bucket: "com-hzt-file"
-    finalHost: "http://com-hzt-file.oss-cn-hangzhou.aliyuncs.com"
+    accessKeyID: ""
+    accessKeySecret: ""
+    stsEndpoint: ""
+    ossEndpoint: ""
+    bucket: ""
+    finalHost: ""
     stsDurationSeconds: 3600
-    OssRoleArn: "acs:ram::1244332021795441:role/ramoss"
+    OssRoleArn: ""
 #  aws:
 #    accessKeyID: 1                            #AssumeRole用户关联的accessKeyID
 #    accessKeySecret: 2     #AssumeRole用户关联的accessKeySecrect
