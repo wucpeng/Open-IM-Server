@@ -8,7 +8,7 @@ service_port_name=(
   openImApiPort
   openImSdkWsPort
   #openImDemoPort
-  openImCmsApiPort
+  #openImCmsApiPort
   openImUserPort
   openImFriendPort
   openImMessagePort
@@ -16,7 +16,7 @@ service_port_name=(
   openImGroupPort
   openImAuthPort
   openImPushPort
-  openImAdminCmsPort
+  #openImAdminCmsPort
   #openImOfficePort
   #openImOrganizationPort
   openImConversationPort

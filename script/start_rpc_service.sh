@@ -8,13 +8,13 @@ source ./function.sh
 service_filename=(
   #api
   open_im_api
-  open_im_cms_api
+  #open_im_cms_api
   #rpc
   open_im_user
   open_im_friend
   open_im_group
   open_im_auth
-  open_im_admin_cms
+  #open_im_admin_cms
   ${msg_name}
   #open_im_office
   #open_im_organization
@@ -26,13 +26,13 @@ service_filename=(
 service_port_name=(
   #api port name
   openImApiPort
-  openImCmsApiPort
+  #openImCmsApiPort
   #rpc port name
   openImUserPort
   openImFriendPort
   openImGroupPort
   openImAuthPort
-  openImAdminCmsPort
+  #openImAdminCmsPort
   openImMessagePort
   #openImOfficePort
   #openImOrganizationPort
@@ -43,13 +43,13 @@ service_port_name=(
 service_prometheus_port_name=(
   #api port name
   openImApiPort
-  openImCmsApiPort
+  #openImCmsApiPort
   #rpc port name
   userPrometheusPort
   friendPrometheusPort
   groupPrometheusPort
   authPrometheusPort
-  adminCmsPrometheusPort
+  #adminCmsPrometheusPort
   messagePrometheusPort
   #officePrometheusPort
   #organizationPrometheusPort
