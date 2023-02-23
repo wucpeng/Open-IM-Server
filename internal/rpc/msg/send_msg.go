@@ -271,9 +271,9 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 	t1 := time.Now()
 	rpc.encapsulateMsgData(pb.MsgData) // append  pb.MsgData.Options
 	msgToMQSingle := pbChat.MsgDataToMQ{Token: pb.Token, OperationID: pb.OperationID, MsgData: pb.MsgData}
-	log.NewError(pb.OperationID, "SendMsg 1", time.Since(t1))
+	//log.NewError(pb.OperationID, "SendMsg 1", time.Since(t1))
 	// callback
-	t1 = time.Now()
+	//t1 = time.Now()
 	callbackResp := callbackWordFilter(pb)
 	if callbackResp.ErrCode != 0 {
 		log.Error(pb.OperationID, utils.GetSelfFuncName(), "callbackWordFilter resp: ", callbackResp)
@@ -284,12 +284,12 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		}
 		return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0)
 	}
-	log.NewError(pb.OperationID, "SendMsg 2", time.Since(t1))
+	//log.NewError(pb.OperationID, "SendMsg 2", time.Since(t1))
 	switch pb.MsgData.SessionType {
 	case constant.SingleChatType:
 		promePkg.PromeInc(promePkg.SingleChatMsgRecvSuccessCounter)
 		// callback
-		t1 = time.Now()
+		//t1 = time.Now()
 		callbackResp := callbackBeforeSendSingleMsg(pb)
 		//log.Info(pb.OperationID, "callbackBeforeSendSingleMsg ", callbackResp.GlobalShield, callbackResp.ErrMsg, callbackResp.ActionCode, callbackResp.ErrCode)
 		if callbackResp.ErrCode != 0 {
@@ -302,19 +302,19 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			promePkg.PromeInc(promePkg.SingleChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0)
 		}
-		t1 = time.Now()
+		//t1 = time.Now()
 		flag, errCode, errMsg, _ = rpc.messageVerification(pb)
 		if !flag {
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0)
 		}
-		t1 = time.Now()
+		//t1 = time.Now()
 		isSend := modifyMessageByUserMessageReceiveOpt(pb.MsgData.RecvID, pb.MsgData.SendID, constant.SingleChatType, pb)
 		if callbackResp.GlobalShield == 1 {
 			isSend = false //全局禁言 或群禁言 只发送给自己
 		}
 		if isSend {
 			msgToMQSingle.MsgData = pb.MsgData
-			t1 = time.Now()
+			//t1 = time.Now()
 			err1 := rpc.sendMsgToWriter(&msgToMQSingle, msgToMQSingle.MsgData.RecvID, constant.OnlineStatus)
 			if err1 != nil {
 				log.NewError(msgToMQSingle.OperationID, "kafka send msg err :RecvID", msgToMQSingle.MsgData.RecvID, msgToMQSingle.String(), err1.Error())
@@ -324,7 +324,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		}
 		if msgToMQSingle.MsgData.SendID != msgToMQSingle.MsgData.RecvID { //Filter messages sent to yourself
 			if msgToMQSingle.MsgData.ContentType != constant.Typing { //单聊正在输入 不给自己发送 modify by wg 2022-12-08
-				t1 = time.Now()
+				//t1 = time.Now()
 				err2 := rpc.sendMsgToWriter(&msgToMQSingle, msgToMQSingle.MsgData.SendID, constant.OnlineStatus)
 				if err2 != nil {
 					log.NewError(msgToMQSingle.OperationID, "kafka send msg err:SendID", msgToMQSingle.MsgData.SendID, msgToMQSingle.String())
@@ -345,7 +345,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		return returnMsg(&replay, pb, 0, "", msgToMQSingle.MsgData.ServerMsgID, msgToMQSingle.MsgData.SendTime)
 	case constant.GroupChatType:
 		// callback
-		t1 = time.Now()
+		//t1 = time.Now()
 		promePkg.PromeInc(promePkg.GroupChatMsgRecvSuccessCounter)
 		callbackResp := callbackBeforeSendGroupMsg(pb)
 		if callbackResp.ErrCode != 0 {
@@ -359,14 +359,14 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0)
 		}
-		log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
+		//log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
 		var memberUserIDList []string
 		if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0)
 		}
 		//log.Info(pb.OperationID, "GetGroupAllMember userID list", memberUserIDList, "len: ", len(memberUserIDList))
-		t1 = time.Now()
+		//t1 = time.Now()
 		var addUidList []string
 		switch pb.MsgData.ContentType {
 		case constant.MemberKickedNotification:
@@ -406,10 +406,10 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 				//log.Error(pb.OperationID, utils.GetSelfFuncName(), "GetGroupMemberInfoByGroupIDAndUserID: ", MuteEndTime, opInfo.MuteEndTime, time.Now().Unix(), opInfo.UserID)
 			}
 		}
-		log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
+		//log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
 		m := make(map[string][]string, 2)
 		m[constant.OnlineStatus] = memberUserIDList
-		t1 = time.Now()
+		//t1 = time.Now()
 		//log.Info(pb.OperationID, "GetGroupAllMember userID list", memberUserIDList, "len: ", len(memberUserIDList))
 
 		//split  parallel send
@@ -431,12 +431,12 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 				go rpc.sendMsgToGroupOptimization(v[split*(len(v)/split):], tmp, k, &sendTag, &wg)
 			}
 		}
-		log.NewError(pb.OperationID, "SendMsg 4", time.Since(t1))
+		//log.NewError(pb.OperationID, "SendMsg 4", time.Since(t1))
 		//log.Debug(pb.OperationID, "send msg cost time22 ", time.Since(t1), pb.MsgData.ClientMsgID, "uidList : ", len(addUidList))
 		//wg.Add(1)
 		//go rpc.sendMsgToGroup(addUidList, *pb, constant.OnlineStatus, &sendTag, &wg)
 		wg.Wait()
-		t1 = time.Now()
+		//t1 = time.Now()
 		// callback
 		//callbackResp = callbackAfterSendGroupMsg(pb)
 		//if callbackResp.ErrCode != 0 {
