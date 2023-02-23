@@ -442,7 +442,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 
 			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
 			   // || (msg.ContentType > 1500 && msg.ContentType < 1600) {
-				log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
+				//log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
 				seqMsg = append(seqMsg, msg)
 			}
 		}

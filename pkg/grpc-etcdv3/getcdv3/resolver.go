@@ -53,7 +53,7 @@ func NewResolver(schema, etcdAddr, serviceName string, operationID string) (*Res
 	r.etcdAddr = etcdAddr
 	resolver.Register(&r)
 	//
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
 	conn, err := grpc.DialContext(ctx, GetPrefix(schema, serviceName),
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
 		grpc.WithInsecure())
@@ -191,7 +191,7 @@ func (r *Resolver) Build(target resolver.Target, cc resolver.ClientConn, opts re
 	}
 	r.cc = cc
 	log.Debug("", "Build..")
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	//     "%s:///%s"
 	prefix := GetPrefix(r.schema, r.serviceName)
 	// get key first
@@ -345,7 +345,7 @@ func getConn4Unique(schema, etcdaddr, servicename string) []*grpc.ClientConn {
 		return nil
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	//     "%s:///%s"
 	prefix := GetPrefix4Unique(schema, servicename)
 
