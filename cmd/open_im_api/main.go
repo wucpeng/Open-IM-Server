@@ -162,13 +162,11 @@ func main() {
 		chatGroup.POST("/batch_send_msg", manage.ManagementBatchSendMsg)
 		chatGroup.POST("/check_msg_is_send_success", manage.CheckMsgIsSendSuccess)
 		chatGroup.POST("/set_msg_min_seq", apiChat.SetMsgMinSeq)
-		//chatGroup.POST("/my_msgs", apiChat.GetMyMsg)
 		chatGroup.POST("/group_calendar", apiChat.GetGroupCalendar)
 		chatGroup.POST("/group_forward", apiChat.GetGroupForward)
 		chatGroup.POST("/group_range", apiChat.GetGroupRange)
 		chatGroup.POST("/user_calendar", apiChat.GetUserCalendar)
 		chatGroup.POST("/user_forward", apiChat.GetUserForward)
-		chatGroup.POST("/user_range", apiChat.GetUserRange)
 		chatGroup.POST("/group_at", apiChat.GetGroupAt)
 	}
 	//Conversation

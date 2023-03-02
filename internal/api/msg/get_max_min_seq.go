@@ -204,6 +204,13 @@ func GetGroupForward(c *gin.Context) {
 					messages = messages[: i]
 				}
 			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"errCode":       0,
+				"errMsg":        "",
+				"data": nil,
+			})
+			return
 		}
 	} else {
 		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), params.PageSize, len(messages))
@@ -281,7 +288,7 @@ func GetGroupRange(c *gin.Context) {
 				break
 			}
 		}
-		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
+		//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
 		if i != -1 {
 			len3 := i+params.PageSize
 			if len3 > len(messages) {
@@ -292,6 +299,13 @@ func GetGroupRange(c *gin.Context) {
 				len1 = 0
 			}
 			messages = messages[len1:len3]
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"errCode":       0,
+				"errMsg":        "",
+				"data": nil,
+			})
+			return
 		}
 	} else {
 		lenM := len(messages)
@@ -454,78 +468,6 @@ func GetUserForward(c *gin.Context) {
 	})
 }
 
-type UserRangeReq struct {
-	OperationID string `json:"operationID"  binding:"required"`
-	UserID      string `json:"userID"  binding:"required"`
-	SenderID    string `json:"senderID" binding:"required"`
-	StartTime   int64 `json:"startTime"`
-	EndTime     int64 `json:"endTime"`
-	TimeDesc     int64 `json:"timeDesc"`
-	LastMsgId   uint32 `json:"lastMsgId"`
-	PageSize    int `json:"pageSize"`
-}
-func GetUserRange(c *gin.Context) {
-	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
-	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
-	//c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyData))
-
-	params := UserRangeReq{}
-	if err := c.BindJSON(&params); err != nil {
-		log.NewError("0", "BindJSON failed ", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-
-	if ok, err := token_verify.VerifyToken(c.Request.Header.Get("token"), params.UserID); !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "token validate err" + err.Error()})
-		return
-	}
-	var messages []*sdk_ws.MsgData
-	messages, err := commonDB.DB.GetSingleAllMsgList(params.UserID, params.SenderID, params.StartTime, params.EndTime, params.OperationID)
-	if err != nil {
-		log.NewError(params.OperationID, utils.GetSelfFuncName(), "GetAllMsgList failed", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
-		return
-	}
-
-	if params.TimeDesc == 1 { //倒序
-		reverseSlice(messages)
-	}
-	if params.LastMsgId != 0 { //数据
-		i := -1
-		for s, md := range messages {
-			if md.Seq == params.LastMsgId {
-				i = s
-				break
-			}
-		}
-		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
-		if i != -1 {
-			len3 := i+params.PageSize
-			if len3 > len(messages) {
-				len3 = len(messages)
-			}
-			len1 := i - params.PageSize
-			if len1 < 0 {
-				len1 = 0
-			}
-			messages = messages[len1:len3]
-		}
-	} else {
-		lenM := len(messages)
-		if lenM > params.PageSize {
-			messages = messages[:params.PageSize]
-		} else {
-			messages = messages[:lenM]
-		}
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
-		"data": messages,
-	})
-}
-
 type GroupAtReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
@@ -587,46 +529,3 @@ func GetGroupAt(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-
-//type GetMyMsgReq struct {
-//	OperationID string `json:"operationID"  binding:"required"`
-//	UserID      string `json:"userID"  binding:"required"`
-//	//StartTime   string `json:"userID"  binding:"required"`
-//	//EndTime     string `json:"userID"  binding:"required"`
-//	GroupID     string `json:"groupID"`
-//}
-//
-//func GetMyMsg(c *gin.Context) {
-//	params := GetMyMsgReq{}
-//	if err := c.BindJSON(&params); err != nil {
-//		log.NewError("0", "BindJSON failed ", err.Error())
-//		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-//		return
-//	}
-//
-//	if ok, err := token_verify.VerifyToken(c.Request.Header.Get("token"), params.UserID); !ok {
-//		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "token validate err" + err.Error()})
-//		return
-//	}
-//	//var messages []*sdk_ws.MsgData
-//	//if params.GroupID != "" {
-//	//	messages, err := commonDB.DB.GetGroupAllMsgList(params.UserID, params.GroupID, params.OperationID)
-//	//	if err != nil {
-//	//		log.NewError(params.OperationID, utils.GetSelfFuncName(), "GetAllMsgList failed", err.Error())
-//	//		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
-//	//		return
-//	//	}
-//	//	c.JSON(http.StatusOK, gin.H{
-//	//		"errCode":       0,
-//	//		"errMsg":        "",
-//	//		"data": messages,
-//	//	})
-//	//} else {
-//	//	c.JSON(http.StatusOK, gin.H{
-//	//		"errCode":       0,
-//	//		"errMsg":        "",
-//	//		"data": messages,
-//	//	})
-//	//}
-//
-//}
