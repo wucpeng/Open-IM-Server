@@ -206,7 +206,7 @@ func GetGroupForward(c *gin.Context) {
 			}
 		} else {
 			c.JSON(http.StatusOK, gin.H{
-				"errCode":       0,
+				"errCode":       10001,
 				"errMsg":        "",
 				"data": nil,
 			})
@@ -301,7 +301,7 @@ func GetGroupRange(c *gin.Context) {
 			messages = messages[len1:len3]
 		} else {
 			c.JSON(http.StatusOK, gin.H{
-				"errCode":       0,
+				"errCode":       10001,
 				"errMsg":        "",
 				"data": nil,
 			})
@@ -407,6 +407,7 @@ func GetUserForward(c *gin.Context) {
 	if params.TimeDesc == 1 { //倒序
 		reverseSlice(messages)
 	}
+	//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), len(messages), params.LastMsgId)
 	if params.LastMsgId != 0 { //数据
 		i := -1
 		for s, md := range messages {
@@ -415,7 +416,7 @@ func GetUserForward(c *gin.Context) {
 				break
 			}
 		}
-		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
+		//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages), params.LastMsgId)
 		if i != -1 {
 			if params.Forward == 1 { //下一页
 				len3 := i+params.PageSize + 1
@@ -423,6 +424,7 @@ func GetUserForward(c *gin.Context) {
 					len3 = len(messages)
 				}
 				messages = messages[i+1:len3]
+				//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len3)
 			} else { //上一页
 				//messages = messages[:i]
 				if i > params.PageSize {
@@ -430,10 +432,17 @@ func GetUserForward(c *gin.Context) {
 				} else {
 					messages = messages[: i]
 				}
+				//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i)
 			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"errCode":       10001,
+				"errMsg":        "",
+				"data": nil,
+			})
+			return
 		}
 	} else {
-
 		if params.Forward == 1 { //下一页
 			len1 := len(messages)
 			if len1 > params.PageSize {
@@ -448,18 +457,6 @@ func GetUserForward(c *gin.Context) {
 				messages = messages[:lenM]
 			}
 		}
-
-		//if params.Forward == 1 { //下一页
-		//	messages = messages[: params.PageSize]
-		//} else { //上一页
-		//	//messages = messages[:i]
-		//	lenM := len(messages)
-		//	if lenM > params.PageSize {
-		//		messages = messages[lenM - params.PageSize:lenM]
-		//	} else {
-		//		messages = messages[:lenM]
-		//	}
-		//}
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"errCode":       0,

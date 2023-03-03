@@ -447,7 +447,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 			}
 		}
 	}
-	log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
 	return seqMsg, nil
 }
 
