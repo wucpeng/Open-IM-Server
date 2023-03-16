@@ -73,6 +73,7 @@ func main() {
 		userRouterGroup.POST("/account_check", manage.AccountCheck)       //1
 		//	userRouterGroup.POST("/get_users_online_status", manage.GetUsersOnlineStatus) //1
 		userRouterGroup.POST("/get_users", user.GetUsers)
+		userRouterGroup.POST("/token_info", user.CheckToken)
 	}
 	//friend routing group
 	friendRouterGroup := r.Group("/friend")
