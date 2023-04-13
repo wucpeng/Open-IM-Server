@@ -85,8 +85,8 @@ func (mc *OnlineHistoryMongoConsumerHandler) handleChatWs2Mongo(cMsg *sarama.Con
 			}
 			//log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", revokeMessage, revokeMessage.ClientMsgID)
 			seqMsg, err := db.DB.GetMsgById(msgFromMQ.AggregationID, revokeMessage.ClientMsgID, v.OperationID)
-			//log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", seqMsg, seqMsg.Seq, err)
-			if err == nil {
+			log.Info(msgFromMQ.TriggerID, "handleChatWs2Mongo AdvancedRevoke: ", seqMsg, seqMsg.Seq, err)
+			if err != nil {
 				seq := []uint32{seqMsg.Seq}
 				db.DB.DelMsgBySeqList(msgFromMQ.AggregationID, seq, v.OperationID)
 			}
