@@ -7,6 +7,7 @@ import (
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
 	"time"
+	"sort"
 
 	go_redis "github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
@@ -25,6 +26,7 @@ type Claims struct {
 	Platform string //login platform
 	jwt.RegisteredClaims
 }
+
 
 func BuildClaims(uid, platform string, ttl int64) Claims {
 	now := time.Now()
@@ -94,6 +96,46 @@ func secret() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.Config.TokenPolicy.AccessSecret), nil
 	}
+}
+
+
+type tokenTimes struct {
+	token      string
+	status 	   int
+	expiresAt  int64
+}
+
+func GetTokensByUserIdPlat(userID string, platformID int) (string, int64, error) {
+	platformName := constant.PlatformIDToName(platformID)
+	//log.NewInfo(userID, "GetTokensByUserIdPlat", userID, platformID, platformName)
+	m, err := commonDB.DB.GetTokenMapByUidPid(userID, platformName)
+	if err != nil {
+		return "", 0, err
+	}
+	//log.NewInfo(userID, "GetTokensByUserIdPlat", m)
+	tokens := []tokenTimes{}
+	if err == nil && m != nil {
+		for k, v := range m {
+			cl, err := GetClaimFromToken(k)
+			//log.NewInfo(userID, "climsa", k, v, cl.Platform, cl.UID, cl.ExpiresAt.Unix(), err)
+			if v == constant.NormalToken && err == nil {
+				tokens = append(tokens, tokenTimes{token: k, status: v, expiresAt: cl.ExpiresAt.Unix()})
+			}
+		}
+	}
+	if len(tokens) == 0 {
+		return "", 0, nil
+	}
+	//log.NewInfo(userID, "GetTokensByUserIdPlat2", tokens)
+	sort.Slice(tokens, func(i, j int)bool {
+		return tokens[i].expiresAt > tokens[j].expiresAt //逆序
+	})
+	now := time.Now()
+	//log.NewInfo(userID, "GetTokensByUserIdPlat", tokens[0], now.Unix())
+	if now.Unix() + 864000 > tokens[0].expiresAt { //十天更新
+		return "", 0, nil
+	}
+	return tokens[0].token, tokens[0].expiresAt, nil
 }
 
 func GetClaimFromToken(tokensString string) (*Claims, error) {

@@ -45,6 +45,10 @@ func (rpc *rpcAuth) UserRegister(_ context.Context, req *pbAuth.UserRegisterReq)
 
 func (rpc *rpcAuth) UserToken(_ context.Context, req *pbAuth.UserTokenReq) (*pbAuth.UserTokenResp, error) {
 	//log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " rpc args ", req.String())
+	token, expiresAt, err := token_verify.GetTokensByUserIdPlat(req.FromUserID, int(req.Platform))
+	if err == nil && expiresAt != 0 {
+		return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{}, Token: token, ExpiredTime: expiresAt}, nil
+	}
 	tokens, expTime, err := token_verify.CreateToken(req.FromUserID, int(req.Platform))
 	if err != nil {
 		errMsg := req.OperationID + " token_verify.CreateToken failed " + err.Error() + req.FromUserID + utils.Int32ToString(req.Platform)
