@@ -29,6 +29,7 @@ func (s *Statistics) output() {
 			intervalCount = *s.AllCount - sum
 		}
 		timeIntervalNum++
+		//system stat  									   msg_gateway  60 second add user conn 0     total:   4             intervalNum 5022               avg 0
 		log.NewWarn("", " system stat ", s.ModuleName, s.PrintArgs, intervalCount, "total:", *s.AllCount, "intervalNum", timeIntervalNum, "avg", (*s.AllCount)/(timeIntervalNum)/s.SleepTime)
 	}
 }

@@ -410,7 +410,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 		return nil, utils.Wrap(err, "")
 	}
 	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 

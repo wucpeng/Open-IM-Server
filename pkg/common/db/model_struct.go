@@ -119,7 +119,7 @@ type Group struct {
 //}  open_im_sdk.GroupMemberFullInfo(AppMangerLevel) > imdb.GroupMember
 type GroupMember struct {
 	GroupID        string    `gorm:"column:group_id;primary_key;size:64"`
-	UserID         string    `gorm:"column:user_id;primary_key;size:64"`
+	UserID         string    `gorm:"column:user_id;primary_key;INDEX:idex_user_id;size:64"`
 	Nickname       string    `gorm:"column:nickname;size:255"`
 	FaceURL        string    `gorm:"column:user_group_face_url;size:255"`
 	RoleLevel      int32     `gorm:"column:role_level"`

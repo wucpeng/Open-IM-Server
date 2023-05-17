@@ -9,12 +9,9 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
-	//"go.etcd.io/etcd/mvcc/mvccpb"
-	//"google.golang.org/genproto/googleapis/ads/googleads/v1/services"
 	"strings"
 	"sync"
 	"time"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/resolver"
@@ -57,7 +54,7 @@ func NewResolver(schema, etcdAddr, serviceName string, operationID string) (*Res
 	conn, err := grpc.DialContext(ctx, GetPrefix(schema, serviceName),
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
 		grpc.WithInsecure())
-	log.Debug(operationID, "etcd key ", GetPrefix(schema, serviceName))
+	//log.Debug(operationID, "etcd key ", GetPrefix(schema, serviceName))
 	if err == nil {
 		r.grpcClientConn = conn
 	}
@@ -94,7 +91,7 @@ func getConn(schema, etcdaddr, serviceName string, operationID string) *grpc.Cli
 		return nil
 	}
 
-	log.Debug(operationID, "etcd key ", schema+serviceName, "value ", *r.grpcClientConn, *r)
+	//log.Debug(operationID, "etcd key ", schema+serviceName, "value ", *r.grpcClientConn, *r)
 	nameResolver[schema+serviceName] = r
 	rwNameResolverMutex.Unlock()
 	return r.grpcClientConn
@@ -165,13 +162,13 @@ func GetConfigConn(serviceName string, operationID string) *grpc.ClientConn {
 		return nil
 	}
 	target := rpcRegisterIP + ":" + utils.Int32ToString(int32(configPortList[0]))
-	log.Info(operationID, "rpcRegisterIP ", rpcRegisterIP, " port ", configPortList, " grpc target: ", target, " serviceName: ", serviceName)
+	//log.Info(operationID, "rpcRegisterIP ", rpcRegisterIP, " port ", configPortList, " grpc target: ", target, " serviceName: ", serviceName)
 	conn, err := grpc.Dial(target, grpc.WithInsecure())
 	if err != nil {
 		log.Error(operationID, "grpc.Dail failed ", err.Error())
 		return nil
 	}
-	log.NewDebug(operationID, utils.GetSelfFuncName(), serviceName, conn)
+	//log.NewDebug(operationID, utils.GetSelfFuncName(), serviceName, conn)
 	return conn
 }
 
@@ -190,7 +187,7 @@ func (r *Resolver) Build(target resolver.Target, cc resolver.ClientConn, opts re
 		return nil, fmt.Errorf("etcd clientv3 client failed, etcd:%s", target)
 	}
 	r.cc = cc
-	log.Debug("", "Build..")
+	//log.Debug("", "Build..")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	//     "%s:///%s"
 	prefix := GetPrefix(r.schema, r.serviceName)

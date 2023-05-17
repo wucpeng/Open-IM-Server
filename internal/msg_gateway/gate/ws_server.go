@@ -273,7 +273,7 @@ func (ws *WServer) sendKickMsg(oldConn *UserConn) {
 func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token string, operationID string) {
 	rwLock.Lock()
 	defer rwLock.Unlock()
-	log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
+	//log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
 	callbackResp := callbackUserOnline(operationID, uid, platformID, token)
 	if callbackResp.ErrCode != 0 {
 		log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOnline resp:", callbackResp)
@@ -303,7 +303,7 @@ func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token
 		count = count + len(v)
 	}
 	promePkg.PromeGaugeInc(promePkg.OnlineUserGauge)
-	log.Info(operationID, "WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
+	//log.Info(operationID, "WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
 }
 
 func (ws *WServer) delUserConn(conn *UserConn) {

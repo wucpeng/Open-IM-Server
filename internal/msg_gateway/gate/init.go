@@ -32,7 +32,7 @@ func Init(rpcPort, wsPort int) {
 	statistics.NewStatistics(&sendMsgAllCount, config.Config.ModuleName.LongConnSvrName, fmt.Sprintf("%d second recv to msg_gateway sendMsgCount", constant.StatisticsTimeInterval), constant.StatisticsTimeInterval)
 	statistics.NewStatistics(&userCount, config.Config.ModuleName.LongConnSvrName, fmt.Sprintf("%d second add user conn", constant.StatisticsTimeInterval), constant.StatisticsTimeInterval)
 	ws.onInit(wsPort)
-	rpcSvr.onInit(rpcPort)
+	rpcSvr.onInit(rpcPort) 
 	initPrometheus()
 }
 

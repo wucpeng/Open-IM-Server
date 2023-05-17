@@ -5,21 +5,14 @@ import (
 	"github.com/dtm-labs/rockscache"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"strings"
-
-	//"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
 	"fmt"
 	go_redis "github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"gopkg.in/mgo.v2"
 	"time"
-
 	"context"
-	//"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	//	"go.mongodb.org/mongo-driver/mongo/options"
-	//go_redis "github.com/go-redis/redis/v8"
 )
 
 var DB DataBases
@@ -58,7 +51,6 @@ func init() {
 		// example: mongodb://$user:$password@mongo1.mongo:27017,mongo2.mongo:27017,mongo3.mongo:27017/$DBDatabase/?replicaSet=rs0&readPreference=secondary&authSource=admin&maxPoolSize=$DBMaxPoolSize
 		uri = config.Config.Mongo.DBUri
 	} else {
-		//mongodb://mongodb1.example.com:27317,mongodb2.example.com:27017/?replicaSet=mySet&authSource=authDB
 		mongodbHosts := ""
 		for i, v := range config.Config.Mongo.DBAddress {
 			if i == len(config.Config.Mongo.DBAddress)-1 {
@@ -69,9 +61,6 @@ func init() {
 		}
 
 		if config.Config.Mongo.DBPassword != "" && config.Config.Mongo.DBUserName != "" {
-			// clientOpts := options.Client().ApplyURI("mongodb://localhost:27017,localhost:27018/?replicaSet=replset")
-			//mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
-			//uri = fmt.Sprintf("mongodb://%s:%s@%s/%s?maxPoolSize=%d&authSource=admin&replicaSet=replset",
 			uri = fmt.Sprintf("mongodb://%s:%s@%s/%s?maxPoolSize=%d&authSource=admin",
 				config.Config.Mongo.DBUserName, config.Config.Mongo.DBPassword, mongodbHosts,
 				config.Config.Mongo.DBDatabase, config.Config.Mongo.DBMaxPoolSize)

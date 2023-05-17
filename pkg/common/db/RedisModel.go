@@ -132,7 +132,7 @@ func (d *DataBases) AddTokenFlag(userID string, platformID int, token string, fl
 
 func (d *DataBases) GetTokenMapByUidPid(userID, platformID string) (map[string]int, error) {
 	key := uidPidToken + userID + ":" + platformID
-	log2.NewDebug("", "get token key is ", key)
+	//log2.NewDebug("", "get token key is ", key)
 	m, err := d.RDB.HGetAll(context.Background(), key).Result()
 	mm := make(map[string]int)
 	for k, v := range m {

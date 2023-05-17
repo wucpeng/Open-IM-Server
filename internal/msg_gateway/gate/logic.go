@@ -200,7 +200,7 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			ws.sendMsgResp(conn, m, nReply)
 			return
 		}
-		log.NewError(m.OperationID, "sendResult", time.Since(t1))
+		//log.NewError(m.OperationID, "sendResult", time.Since(t1))
 		t1 = time.Now()
 		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, m.OperationID)
 		if etcdConn == nil {
@@ -211,7 +211,7 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			ws.sendMsgResp(conn, m, nReply)
 			return
 		}
-		log.NewError(m.OperationID, "sendResult2", time.Since(t1))
+		//log.NewError(m.OperationID, "sendResult2", time.Since(t1))
 		t1 = time.Now()
 		client := pbChat.NewMsgClient(etcdConn)
 		reply, err := client.SendMsg(context.Background(), &pbData)
