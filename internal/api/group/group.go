@@ -350,7 +350,7 @@ func CreateGroup(c *gin.Context) {
 	if len(params.MemberList) > constant.MaxNotificationNum { //pkg/common/constant/constant.go:338 100
 		errMsg := params.OperationID + " too many members " + utils.Int32ToString(int32(len(params.MemberList)))
 		log.Error(params.OperationID, errMsg)
-		c.JSON(http.StatusOK, gin.H{"errCode": 400, "errMsg": errMsg})
+		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
 		return
 	}
 	req := &rpc.CreateGroupReq{GroupInfo: &open_im_sdk.GroupInfo{}}
@@ -1032,7 +1032,6 @@ func MuteGroup(c *gin.Context) {
 	}
 
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " api args ", req.String())
-
 	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImGroupName, req.OperationID)
 	if etcdConn == nil {
 		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"

@@ -401,7 +401,7 @@ func (d *DataBases) GetMsgById(uid string, clientMsgId string, operationID strin
 }
 
 func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, groupID)
 	maxSeq, err := d.GetUserMaxSeq(uid)
 	if err == redis.Nil {
 		return seqMsg, nil
@@ -427,10 +427,11 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
 				return nil, err
 			}
-			if msg.Status == constant.MsgDeleted {
+			if groupID != msg.GroupID {
 				continue
 			}
-			if groupID != msg.GroupID {
+			//log.NewDebug(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, msg.Status, msg.GroupID, string(msg.Content))
+			if msg.Status == constant.MsgDeleted {
 				continue
 			}
 			if startTime != 0 && msg.SendTime < startTime {
@@ -439,7 +440,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 			if endTime != 0 && msg.SendTime > endTime {
 				break
 			}
-
+			//log.NewDebug(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
 			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
 			   // || (msg.ContentType > 1500 && msg.ContentType < 1600) {
 				//log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
