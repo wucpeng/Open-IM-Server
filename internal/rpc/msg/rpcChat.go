@@ -94,6 +94,8 @@ func (rpc *rpcChat) Run() {
 			// grpc.UnaryInterceptor(promePkg.UnaryServerInterceptorProme),
 			grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
 			grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
+			grpc.MaxRecvMsgSize(100 *1024*1024),
+			grpc.MaxSendMsgSize(100 *1024*1024),
 		}...)
 	}
 	srv := grpc.NewServer(grpcOpts...)

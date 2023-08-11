@@ -1200,6 +1200,7 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 		faceURL = req.GroupInfoForSet.FaceURL
 	}
 
+
 	if req.GroupInfoForSet.NeedVerification != nil {
 		changedType = changedType | (1 << 4)
 		m := make(map[string]interface{})
@@ -1227,6 +1228,11 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 			return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
 		}
 	}
+
+	if req.GroupInfoForSet.Ex != "" {
+		changedType = changedType | (1 << 7)
+	}
+
 	//
 	//if req.RoleLevel != nil {
 	//
