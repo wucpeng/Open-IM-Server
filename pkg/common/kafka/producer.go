@@ -25,7 +25,7 @@ func NewKafkaProducer(addr []string, topic string) *Producer {
 	p.config.Producer.Return.Successes = true //Whether to enable the successes channel to be notified after the message is sent successfully
 	p.config.Producer.Return.Errors = true
 	p.config.Producer.RequiredAcks = sarama.WaitForAll        //Set producer Message Reply level 0 1 all // 发送完数据需要 leader和follow都确认
-	p.config.Producer.Partitioner = sarama.NewRandomPartitioner  //sarama.NewHashPartitioner
+	p.config.Producer.Partitioner = sarama.NewHashPartitioner  //sarama.NewHashPartitioner
 	//Set the hash-key automatic hash partition. When sending a message,
 	// you must specify the key value of the message.
 	//If there is no key, the partition will be selected randomly
