@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
+	//promePkg "Open_IM/pkg/common/prometheus"
 	pbMsg "Open_IM/pkg/proto/msg"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -20,7 +21,7 @@ import (
 	//"github.com/garyburd/redigo/redis"
 	"github.com/golang/protobuf/proto"
 	"go.mongodb.org/mongo-driver/bson"
-
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strconv"
 	"time"
 )
@@ -49,6 +50,14 @@ type UserChat struct {
 	//ListIndex int `bson:"index"`
 	Msg []MsgInfo
 }
+type UserChat2 struct {
+	ID  string `bson:"_id"`
+	UID string
+	//ListIndex int `bson:"index"`
+	Msg []MsgInfo
+}
+
+
 
 type GroupMember_x struct {
 	GroupID string
@@ -148,7 +157,6 @@ func (d *DataBases) ReplaceMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgD
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), suffixUserID, *msg)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	s := fmt.Sprintf("msg.%d.msg", seqIndex)
 	//log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
 	msg.Status = constant.MsgDeleted
 	bytes, err := proto.Marshal(msg)
@@ -156,6 +164,7 @@ func (d *DataBases) ReplaceMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgD
 		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal failed ", err.Error(), msg.String())
 		return utils.Wrap(err, "")
 	}
+	s := fmt.Sprintf("msg.%d.msg", seqIndex)
 	updateResult, err := c.UpdateOne(ctx, bson.M{"uid": suffixUserID}, bson.M{"$set": bson.M{s: bytes}})
 	log.NewDebug(operationID, utils.GetSelfFuncName(), updateResult)
 	if err != nil {
@@ -451,6 +460,7 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
 	return seqMsg, nil
 }
+
 
 func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
@@ -1445,3 +1455,177 @@ func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) e
 //	}
 //	return nil
 //}
+
+func (d *DataBases) CheckGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetSort(bson.M{"uid": 1})
+	var userChats []UserChat2
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
+	mapSeq := make(map[uint32]int)
+	mapSeqMsg := make(map[uint32]open_im_sdk.MsgData)
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		var currentMsgs []MsgInfo
+		for i := 0; i < len(userChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if val, ok := mapSeq[msg.Seq]; ok {
+				log.NewError(operationID, "seq dup", msg.Seq, msg.ClientMsgID, msg.ServerMsgID, msg.ContentType, msg.SendTime, msg.CreateTime, val)
+				mapSeq[msg.Seq] = val + 1
+				if msg.ContentType < 1000 {
+					currentMsgs = append(currentMsgs, userChat.Msg[i])
+					if data, ok1 := mapSeqMsg[msg.Seq]; ok1 {
+						log.NewError(operationID, "seq dup msg", data.Seq, data.ClientMsgID, data.ServerMsgID, data.ContentType, data.SendTime, data.CreateTime)
+					}
+				}
+			} else {
+				mapSeq[msg.Seq] = 1
+				currentMsgs = append(currentMsgs, userChat.Msg[i])
+				mapSeqMsg[msg.Seq] = *msg
+			}
+		}
+
+		log.NewError(operationID, userChat.ID, userChat.UID, len(userChat.Msg),  len(currentMsgs))
+		if len(currentMsgs) != len(userChat.Msg) {
+			log.NewError(operationID, "update user chat")
+			objID, _ := primitive.ObjectIDFromHex(userChat.ID)
+			_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"msg": currentMsgs}})
+			if err != nil {
+				log.NewError(operationID, "update err", userChat.ID, userChat.UID, err.Error())
+			} else {
+				log.NewError(operationID, "update success",  userChat.ID, userChat.UID)
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (d *DataBases) ResizeGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetSort(bson.M{"uid": 1})
+	var userChats []UserChat
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
+	mapSeq := make(map[uint32]int)
+	//mapClientId := make(map[string]int)
+	mapSeqData := make(map[uint32]MsgInfo)
+	mapSeqMsg := make(map[uint32]open_im_sdk.MsgData)
+
+	//var seqs [] uint32
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		for i := 0; i < len(userChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if val, ok := mapSeq[msg.Seq]; ok {
+				log.NewError(operationID, "seq dup", msg.Seq, msg.ClientMsgID, msg.ServerMsgID, msg.ContentType, msg.SendTime, msg.CreateTime, val)
+				mapSeq[msg.Seq] = val + 1
+				if msg.ContentType < 1000 {
+					if data, ok1 := mapSeqMsg[msg.Seq]; ok1 {
+						log.NewError(operationID, "seq dup msg", data.Seq, data.ClientMsgID, data.ServerMsgID, data.ContentType, data.SendTime, data.CreateTime)
+						if data.ContentType > 1000 || (data.ContentType > msg.ContentType && msg.ContentType == 110) {
+							mapSeqData[msg.Seq] = userChat.Msg[i]
+							mapSeqMsg[msg.Seq] = *msg
+						}
+					}
+				}
+			} else {
+				mapSeq[msg.Seq] = 1
+				mapSeqData[msg.Seq] = userChat.Msg[i]
+				mapSeqMsg[msg.Seq] = *msg
+			}
+		}
+		log.NewError(operationID, userChat.UID)
+	}
+	mapUserChat := make(map[string]UserChat)
+	for i := 1; i <= int(maxSeq); i++ {
+		uuid := getSeqUid(uid, uint32(i))
+		if us, ok2 := mapUserChat[uuid]; ok2 {
+			if data, ok := mapSeqData[uint32(i)]; ok {
+				us.Msg = append(us.Msg, data)
+			} else {
+				emptyData := MsgInfo{
+					SendTime: 0,
+					Msg: nil,
+				}
+				us.Msg = append(us.Msg, emptyData)
+			}
+			mapUserChat[uuid] = us
+		} else {
+			data3 := UserChat{
+				UID: uuid,
+				Msg: []MsgInfo{},
+			}
+			if data, ok := mapSeqData[uint32(i)]; ok {
+				data3.Msg = append(data3.Msg, data)
+			} else {
+				emptyData := MsgInfo{
+					SendTime: 0,
+					Msg: nil,
+				}
+				data3.Msg = append(data3.Msg, emptyData)
+			}
+			mapUserChat[uuid] = data3
+		}
+	}
+
+	for k, v := range mapUserChat {
+		modifyUidId := fmt.Sprintf("modify_%s", v.UID)
+		log.NewError(operationID, "mapUserChat", k, len(v.Msg), v.UID, modifyUidId)
+		//TODO update old uid
+		//_, err = c.UpdateOne(sCtx, bson.M{"user_id": userID}, bson.M{"$addToSet": bson.M{"group_id_list": groupID}}, opts)
+		_, err = c.UpdateOne(ctx, bson.M{"uid": v.UID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
+		if err == nil {
+			if _, err = c.InsertOne(ctx, &v); err != nil {
+				log.NewError(operationID, "InsertOne failed", k, len(v.Msg), err.Error())
+				return nil, nil
+			}
+		}
+	}
+	return nil, nil
+}

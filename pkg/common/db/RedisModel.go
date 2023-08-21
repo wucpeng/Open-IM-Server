@@ -198,7 +198,6 @@ func (d *DataBases) GetMessageListBySeq(userID string, seqList []uint32, operati
 				log2.NewDebug(operationID, "redis get msg is ", msg.String())
 				seqMsg = append(seqMsg, &msg)
 			}
-
 		}
 	}
 	return seqMsg, failedSeqList, errResult

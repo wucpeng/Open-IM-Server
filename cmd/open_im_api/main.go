@@ -169,6 +169,7 @@ func main() {
 		chatGroup.POST("/user_calendar", apiChat.GetUserCalendar)
 		chatGroup.POST("/user_forward", apiChat.GetUserForward)
 		chatGroup.POST("/group_at", apiChat.GetGroupAt)
+		chatGroup.POST("/check_user_msg", apiChat.CheckUserMongoMsg)
 	}
 	//Conversation
 	conversationGroup := r.Group("/conversation")

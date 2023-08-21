@@ -3,7 +3,7 @@ package logic
 import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
-	//"Open_IM/pkg/common/db"
+	"Open_IM/pkg/common/db"
 	kfk "Open_IM/pkg/common/kafka"
 	"Open_IM/pkg/common/log"
 	//"Open_IM/pkg/grpc-etcdv3/getcdv3"
@@ -79,9 +79,6 @@ func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
 					if isHistory {
 						storageMsgList = append(storageMsgList, v)
 					} else {
-						//if !(!isSenderSync && msgChannelValue.aggregationID == v.MsgData.SendID) {
-						//	notStoragePushMsgList = append(notStoragePushMsgList, v)
-						//} // modify by wg 2022-12-05
 						if isSenderSync || msgChannelValue.aggregationID != v.MsgData.SendID {
 							notStoragePushMsgList = append(notStoragePushMsgList, v)
 						}
@@ -89,7 +86,7 @@ func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
 				}
 				//log.Info(triggerID, "msg storage=", len(storageMsgList), "push=", len(notStoragePushMsgList))
 				if len(storageMsgList) > 0 {
-					err, lastSeq := saveUserChatList(msgChannelValue.aggregationID, storageMsgList, triggerID)
+					err, lastSeq := db.DB.BatchInsertChat2Cache(msgChannelValue.aggregationID, storageMsgList, triggerID) //redis append seq and modify user seq
 					if err != nil {
 						singleMsgFailedCount += uint64(len(storageMsgList))
 						log.NewError(triggerID, "single data insert to redis err", err.Error(), storageMsgList)
@@ -101,11 +98,9 @@ func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
 						for _, v := range storageMsgList {
 							sendMessageToPushMQ(v, msgChannelValue.aggregationID)
 						}
-						for _, x := range notStoragePushMsgList {
-							sendMessageToPushMQ(x, msgChannelValue.aggregationID)
-						}
 					}
-				} else {
+				}
+				if len(notStoragePushMsgList) > 0 {
 					for _, x := range notStoragePushMsgList {
 						sendMessageToPushMQ(x, msgChannelValue.aggregationID)
 					}

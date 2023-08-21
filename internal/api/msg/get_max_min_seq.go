@@ -526,3 +526,40 @@ func GetGroupAt(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+type CheckUserMsg struct {
+	OperationID string `json:"operationID"  binding:"required"`
+	UserID      string `json:"userID"  binding:"required"`
+	Type      	int32 `json:"type"  binding:"required"`
+}
+func CheckUserMongoMsg(c *gin.Context) {
+	params := CheckUserMsg{}
+	if err := c.BindJSON(&params); err != nil {
+		log.NewError("0", "BindJSON failed ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
+		return
+	}
+	//if ok, err := token_verify.VerifyToken(c.Request.Header.Get("token"), params.UserID); !ok {
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "token validate err" + err.Error()})
+	//	return
+	//}
+	if params.Type == 1 {
+		_, err := commonDB.DB.CheckGroupAllMsgList(params.UserID, params.OperationID)
+		if err != nil {
+			log.NewError(params.OperationID, utils.GetSelfFuncName(), "CheckGroupAllMsgList failed", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
+			return
+		}
+	} else {
+		_, err := commonDB.DB.ResizeGroupAllMsgList(params.UserID, params.OperationID)
+		if err != nil {
+			log.NewError(params.OperationID, utils.GetSelfFuncName(), "ResizeGroupAllMsgList failed", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"errCode":       0,
+		"errMsg":        "",
+	})
+}
