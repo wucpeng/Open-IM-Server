@@ -27,6 +27,9 @@ func getFromToUserNickname(fromUserID, toUserID string) (string, string, error) 
 
 func friendNotification(commID *pbFriend.CommID, contentType int32, m proto.Message) {
 	log.Info(commID.OperationID, utils.GetSelfFuncName(), "args: ", commID, contentType)
+	if commID.ToUserID == "openIMAdmin" {
+		return
+	}
 	var err error
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)

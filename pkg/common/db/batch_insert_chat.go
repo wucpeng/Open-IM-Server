@@ -39,7 +39,7 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 	//log.Debug(operationID, "remain ", remain, "insertCounter ", insertCounter, "currentMaxSeq ", currentMaxSeq, userID, len(msgList))
 	var err error
 	for _, m := range msgList {
-		//log.Debug(operationID, "msg node ", m.String(), m.MsgData.ClientMsgID)
+		log.Debug(operationID, "msg node ", m.MsgData.Seq, currentMaxSeq, m.MsgData.ClientMsgID)
 		currentMaxSeq++
 		sMsg := MsgInfo{}
 		sMsg.SendTime = m.MsgData.SendTime
@@ -103,6 +103,67 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 			return utils.Wrap(err, "")
 		}
 		promePkg.PromeInc(promePkg.MsgInsertMongoSuccessCounter)
+	}
+	return nil
+}
+
+func (d *DataBases) BatchInsertChat2Mongo(userID string, msgList []*pbMsg.MsgDataToMQ, operationID string, currentMaxSeq uint64) error {
+	if len(msgList) > GetSingleGocMsgNum() {
+		return errors.New("too large") //5000
+	}
+	uuids := make([]string, 0)
+	mapUidMsgs := make(map[string][]MsgInfo)
+	var err error
+	for _, m := range msgList {
+		currentMaxSeq++
+		sMsg := MsgInfo{}
+		sMsg.SendTime = m.MsgData.SendTime
+		m.MsgData.Seq = uint32(currentMaxSeq)
+		log.Info(operationID, "msg node ", m.MsgData.Seq, currentMaxSeq, m.MsgData.ClientMsgID)
+		if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
+			return utils.Wrap(err, "")
+		}
+		uuid := getSeqUid(userID, m.MsgData.Seq)
+		if v, ok := mapUidMsgs[uuid]; ok {
+			mapUidMsgs[uuid] = append(v, sMsg)
+		} else {
+			uuids = append(uuids, uuid)
+			ms := make([]MsgInfo, 0)
+			ms = append(ms, sMsg)
+			mapUidMsgs[uuid] = ms
+		}
+	}
+	log.Info(operationID, utils.GetSelfFuncName(), len(msgList), currentMaxSeq, uuids)
+	ctx := context.Background()
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	for _, uuid := range uuids {
+		if msgs, ok := mapUidMsgs[uuid]; ok {
+			log.Info(operationID, utils.GetSelfFuncName(), "try update or insert", uuid, len(msgs))
+			filter := bson.M{"uid": uuid}
+			err := c.FindOneAndUpdate(ctx, filter, bson.M{"$push": bson.M{"msg": bson.M{"$each": msgs}}}).Err()
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					filter := bson.M{"uid": uuid}
+					sChat := UserChat{}
+					sChat.UID = uuid
+					sChat.Msg = msgs
+					if _, err = c.InsertOne(ctx, &sChat); err != nil {
+						promePkg.PromeInc(promePkg.MsgInsertMongoFailedCounter)
+						log.NewError(operationID, "InsertOne failed", filter, err.Error(), sChat)
+						return utils.Wrap(err, "")
+					} else {
+						log.Info(operationID, utils.GetSelfFuncName(), "insert new", uuid, len(msgs))
+					}
+					promePkg.PromeInc(promePkg.MsgInsertMongoSuccessCounter)
+				} else {
+					promePkg.PromeInc(promePkg.MsgInsertMongoFailedCounter)
+					log.Error(operationID, "FindOneAndUpdate failed ", err.Error(), filter)
+					return utils.Wrap(err, "")
+				}
+			} else {
+				promePkg.PromeInc(promePkg.MsgInsertMongoSuccessCounter)
+			}
+		}
 	}
 	return nil
 }

@@ -985,6 +985,9 @@ func (rpc *rpcChat) sendMsgToGroupOptimization(list []string, groupPB *pbChat.Se
 		tempOptions[k] = v
 	}
 	for _, v := range list {
+		if v == "openIMAdmin" {
+			continue
+		}
 		groupPB.MsgData.RecvID = v
 		options := make(map[string]bool, 1)
 		for k, v := range tempOptions {

@@ -549,10 +549,17 @@ func CheckUserMongoMsg(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
 			return
 		}
-	} else {
+	} else if params.Type == 2{
 		_, err := commonDB.DB.ResizeGroupAllMsgList(params.UserID, params.OperationID)
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), "ResizeGroupAllMsgList failed", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
+			return
+		}
+	} else {
+		_, err := commonDB.DB.UserMsgLogs(params.UserID, params.OperationID)
+		if err != nil {
+			log.NewError(params.OperationID, utils.GetSelfFuncName(), "UserMsgLogs failed", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
 			return
 		}
