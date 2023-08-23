@@ -404,11 +404,19 @@ func (s *userServer) UpdateUserInfo(ctx context.Context, req *pbUser.UpdateUserI
 
 	oldNickname := ""
 	oldFaceUrl := ""
-	if req.UserInfo.Nickname != "" {
+	isNewName := false
+	isNewFace := false
+	if req.UserInfo.Nickname != "" || req.UserInfo.FaceURL != ""{
 		u, err := imdb.GetUserByUserID(req.UserInfo.UserID)
 		if err == nil {
 			oldNickname = u.Nickname
 			oldFaceUrl = u.FaceURL
+			if req.UserInfo.Nickname != "" && oldNickname != req.UserInfo.Nickname {
+				isNewName = true
+			}
+			if req.UserInfo.FaceURL != "" && oldFaceUrl != req.UserInfo.FaceURL {
+				isNewFace = true
+			}
 		}
 	}
 	var user db.User
@@ -446,20 +454,27 @@ func (s *userServer) UpdateUserInfo(ctx context.Context, req *pbUser.UpdateUserI
 	//}
 
 	if err := rocksCache.DelUserInfoFromCache(user.UserID); err != nil {
-		log.NewError(req.OperationID, "GetFriendList failed ", err.Error())
+		log.NewError(req.OperationID, "DelUserInfoFromCache failed ", err.Error())
 		return &pbUser.UpdateUserInfoResp{CommonResp: &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}}, nil
 	}
 	if req.OpUserID != "openIMAdmin" {
 		chat.UserInfoUpdatedNotification(req.OperationID, req.UserInfo.UserID, req.OpUserID)
 		log.Info(req.OperationID, "UserInfoUpdatedNotification ", req.UserInfo.UserID, req.OpUserID)
 	}
-	if req.UserInfo.FaceURL != "" && oldFaceUrl != req.UserInfo.FaceURL {
+
+	if isNewName && isNewFace {
+		s.SyncJoinedGroupMemberNicknameAndFace(req.UserInfo.UserID, req.UserInfo.Nickname, req.UserInfo.FaceURL, req.OperationID, req.OpUserID)
+	} else if isNewName {
+		s.SyncJoinedGroupMemberNickname(req.UserInfo.UserID, req.UserInfo.Nickname, oldNickname, req.OperationID, req.OpUserID)
+	} else if isNewFace {
 		s.SyncJoinedGroupMemberFaceURL(req.UserInfo.UserID, req.UserInfo.FaceURL, req.OperationID, req.OpUserID)
 	}
-	if req.UserInfo.Nickname != "" && oldNickname != req.UserInfo.Nickname {
-		s.SyncJoinedGroupMemberNickname(req.UserInfo.UserID, req.UserInfo.Nickname, oldNickname, req.OperationID, req.OpUserID)
-	}
-
+	//if req.UserInfo.FaceURL != "" && oldFaceUrl != req.UserInfo.FaceURL {
+	//	s.SyncJoinedGroupMemberFaceURL(req.UserInfo.UserID, req.UserInfo.FaceURL, req.OperationID, req.OpUserID)
+	//}
+	//if req.UserInfo.Nickname != "" && oldNickname != req.UserInfo.Nickname {
+	//	s.SyncJoinedGroupMemberNickname(req.UserInfo.UserID, req.UserInfo.Nickname, oldNickname, req.OperationID, req.OpUserID)
+	//}
 	return &pbUser.UpdateUserInfoResp{CommonResp: &pbUser.CommonResp{}}, nil
 }
 func (s *userServer) SetGlobalRecvMessageOpt(ctx context.Context, req *pbUser.SetGlobalRecvMessageOptReq) (*pbUser.SetGlobalRecvMessageOptResp, error) {
@@ -490,6 +505,7 @@ func (s *userServer) SetGlobalRecvMessageOpt(ctx context.Context, req *pbUser.Se
 }
 
 func (s *userServer) SyncJoinedGroupMemberFaceURL(userID string, faceURL string, operationID string, opUserID string) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), userID, faceURL, opUserID)
 	joinedGroupIDList, err := rocksCache.GetJoinedGroupIDListFromCache(userID)
 	if err != nil {
 		log.NewWarn(operationID, "GetJoinedGroupIDListByUserID failed ", userID, err.Error())
@@ -506,37 +522,80 @@ func (s *userServer) SyncJoinedGroupMemberFaceURL(userID string, faceURL string,
 			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupID, userID)
 			continue
 		}
-		chat.GroupMemberInfoSetNotification(operationID, opUserID, groupID, userID)
+		//chat.GroupMemberInfoSetNotification(operationID, opUserID, groupID, userID)
 	}
 }
 
 func (s *userServer) SyncJoinedGroupMemberNickname(userID string, newNickname, oldNickname string, operationID string, opUserID string) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), userID, newNickname, oldNickname, opUserID)
 	joinedGroupIDList, err := imdb.GetJoinedGroupIDListByUserID(userID)
 	if err != nil {
 		log.NewWarn(operationID, "GetJoinedGroupIDListByUserID failed ", userID, err.Error())
 		return
 	}
+	log.NewInfo(operationID, utils.GetSelfFuncName(), userID, newNickname, len(joinedGroupIDList), joinedGroupIDList)
+	//memberIds, err := imdb.GetUserRelateGroupMemberIds(joinedGroupIDList, userID)
+	//if err != nil {
+	//	log.NewWarn(operationID, "GetUserRelateGroupMemberIds failed ", userID, err.Error())
+	//	return
+	//}
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), userID, newNickname, len(memberIds), memberIds)
+	//for _, v := range memberIds {
+	//	chat.UserInfoUpdatedNotification(operationID, userID, v)
+	//}
 	for _, v := range joinedGroupIDList {
-		member, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(v, userID)
-		if err != nil {
-			log.NewWarn(operationID, "GetGroupMemberInfoByGroupIDAndUserID failed ", err.Error(), v, userID)
+		groupMemberInfo := db.GroupMember{UserID: userID, GroupID: v, Nickname: newNickname}
+		if err := imdb.UpdateGroupMemberInfo(groupMemberInfo); err != nil {
+			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupMemberInfo)
 			continue
 		}
-		if member.Nickname != oldNickname {
-			groupMemberInfo := db.GroupMember{UserID: userID, GroupID: v, Nickname: newNickname}
-			if err := imdb.UpdateGroupMemberInfo(groupMemberInfo); err != nil {
-				log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupMemberInfo)
-				continue
-			}
-			//if err := rocksCache.DelAllGroupMembersInfoFromCache(v); err != nil {
-			//	log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), v)
-			//	continue
-			//}
-			if err := rocksCache.DelGroupMemberInfoFromCache(v, userID); err != nil {
-				log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), v)
-			}
-			chat.GroupMemberInfoSetNotification(operationID, opUserID, v, userID)
+		if err := rocksCache.DelGroupMemberInfoFromCache(v, userID); err != nil {
+			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), v)
 		}
+		chat.GroupMemberInfoSetNotification(operationID, opUserID, v, userID)
+
+		//member, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(v, userID)
+		//if err != nil {
+		//	log.NewWarn(operationID, "GetGroupMemberInfoByGroupIDAndUserID failed ", err.Error(), v, userID)
+		//	continue
+		//}
+		//if member.Nickname != newNickname {
+		//	groupMemberInfo := db.GroupMember{UserID: userID, GroupID: v, Nickname: newNickname}
+		//	if err := imdb.UpdateGroupMemberInfo(groupMemberInfo); err != nil {
+		//		log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupMemberInfo)
+		//		continue
+		//	}
+		//	if err := rocksCache.DelGroupMemberInfoFromCache(v, userID); err != nil {
+		//		log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), v)
+		//	}
+		//	//chat.GroupMemberInfoSetNotification(operationID, opUserID, v, userID)
+		//}
+	}
+}
+
+func (s *userServer) SyncJoinedGroupMemberNicknameAndFace(userID string, newNickname, newFaceUrl string, operationID string, opUserID string) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), userID, newNickname, newFaceUrl, opUserID)
+	joinedGroupIDList, err := imdb.GetJoinedGroupIDListByUserID(userID)
+	if err != nil {
+		log.NewWarn(operationID, "SyncJoinedGroupMemberNicknameAndFace failed ", userID, err.Error())
+		return
+	}
+	for _, v := range joinedGroupIDList {
+		//member, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(v, userID)
+		//if err != nil {
+		//	log.NewWarn(operationID, "SyncJoinedGroupMemberNicknameAndFace failed ", err.Error(), v, userID)
+		//	continue
+		//}
+		groupMemberInfo := db.GroupMember{UserID: userID, GroupID: v, Nickname: newNickname, FaceURL: newFaceUrl}
+		if err := imdb.UpdateGroupMemberInfo(groupMemberInfo); err != nil {
+			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupMemberInfo)
+			continue
+		}
+
+		if err := rocksCache.DelGroupMemberInfoFromCache(v, userID); err != nil {
+			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), v)
+		}
+		//chat.GroupMemberInfoSetNotification(operationID, opUserID, v, userID)
 	}
 }
 

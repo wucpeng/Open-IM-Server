@@ -1550,6 +1550,60 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 	return nil, nil
 }
 
+func (d *DataBases) RemoveGroupSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	//seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetSort(bson.M{"uid": 1})
+	var userChats []UserChat2
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		currentMsgs := make([]MsgInfo, 0)
+		for i := 0; i < len(userChat.Msg); i++ {
+			if userChat.Msg[i].SendTime == 0 {
+				continue
+			}
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if msg.ContentType < 1000 || msg.ContentType == 1501 {
+				currentMsgs = append(currentMsgs, userChat.Msg[i])
+			}
+		}
+		log.NewError(operationID, userChat.ID, userChat.UID, len(userChat.Msg),  len(currentMsgs))
+		if len(currentMsgs) != len(userChat.Msg) {
+			log.NewError(operationID, "update user chat")
+			objID, _ := primitive.ObjectIDFromHex(userChat.ID)
+			_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"msg": currentMsgs}})
+			if err != nil {
+				log.NewError(operationID, "update err", userChat.ID, userChat.UID, err.Error())
+			} else {
+				log.NewError(operationID, "update success",  userChat.ID, userChat.UID)
+			}
+		}
+	}
+	return nil, nil
+}
 
 // deleted by wg 2022-12-12
 //func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {

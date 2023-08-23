@@ -93,7 +93,6 @@ func MsgToUser(pushMsg *pbPush.PushMsgReq) {
 			}
 			log.NewInfo(pushMsg.OperationID, utils.GetSelfFuncName(), resp)
 		}
-
 	}
 
 	//if isOfflinePush && pushMsg.PushToUserID != pushMsg.MsgData.SendID && offlinePusher != nil {

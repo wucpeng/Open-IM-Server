@@ -223,6 +223,12 @@ func UpdateGroupMemberInfoDefaultZero(groupMemberInfo db.GroupMember, args map[s
 	return db.DB.MysqlDB.DefaultGormDB().Model(groupMemberInfo).Updates(args).Error
 }
 
+func GetUserRelateGroupMemberIds(groupIDs []string, userID string) ([]string, error) {
+	var userIDs []string
+	err := db.DB.MysqlDB.DefaultGormDB().Table("group_members").Where("group_id IN ? and user_id<> ?", groupIDs, userID).Distinct().Pluck("user_id", &userIDs).Error
+	return userIDs, err
+}
+
 //
 //func SelectGroupList(groupID string) ([]string, error) {
 //	var groupUserID string

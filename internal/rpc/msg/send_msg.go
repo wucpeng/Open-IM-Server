@@ -940,10 +940,11 @@ func Notification(n *NotificationMsg) {
 	}
 	utils.SetSwitchFromOptions(msg.Options, constant.IsUnreadCount, unReadCount)
 	utils.SetSwitchFromOptions(msg.Options, constant.IsOfflinePush, pushSwitch)
-	offlineInfo.Title = title
-	offlineInfo.Desc = desc
-	offlineInfo.Ex = ex
-	msg.OfflinePushInfo = &offlineInfo
+	//offlineInfo.Title = title
+	//offlineInfo.Desc = desc
+	//offlineInfo.Ex = ex
+	//msg.OfflinePushInfo = &offlineInfo
+	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), title, desc, ex)
 	req.MsgData = &msg
 	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
 	if etcdConn == nil {
