@@ -206,9 +206,12 @@ func main() {
 
 	organizationGroup := r.Group("/organization")
 	{
+		//organizationGroup.POST("/get_sub_department", organization.GetSubDepartment)
+		//organizationGroup.POST("/get_department_member", organization.GetDepartmentMember)
+
 		organizationGroup.POST("/create_department", organization.CreateDepartment)
 		organizationGroup.POST("/update_department", organization.UpdateDepartment)
-		//organizationGroup.POST("/get_sub_department", organization.GetSubDepartment)
+
 		organizationGroup.POST("/delete_department", organization.DeleteDepartment)
 		organizationGroup.POST("/get_all_department", organization.GetAllDepartment)
 
@@ -220,7 +223,6 @@ func main() {
 		organizationGroup.POST("/get_user_in_department", organization.GetUserInDepartment)
 		organizationGroup.POST("/update_user_in_department", organization.UpdateUserInDepartment)
 
-		//organizationGroup.POST("/get_department_member", organization.GetDepartmentMember)
 		organizationGroup.POST("/delete_user_in_department", organization.DeleteUserInDepartment)
 		organizationGroup.POST("/get_user_in_organization", organization.GetUserInOrganization)
 	}

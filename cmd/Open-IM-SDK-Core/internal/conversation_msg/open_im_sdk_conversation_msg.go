@@ -635,7 +635,7 @@ func (c *Conversation) SendMessage(callback open_im_sdk_callback.SendMsgCallBack
 		}
 		log.Warn(operationID, "before insert  message is ", s)
 		oldMessage, err := c.db.GetMessageController(&s)
-		if err != nil {
+		if err != nil || oldMessage.Status == 0 {
 			msgStructToLocalChatLog(&localMessage, &s)
 			err := c.db.InsertMessageController(&localMessage)
 			common.CheckAnyErrCallback(callback, 201, err, operationID)

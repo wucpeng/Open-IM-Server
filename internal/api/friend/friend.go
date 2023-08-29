@@ -1,14 +1,14 @@
 package friend
 
 import (
-	jsonData "Open_IM/internal/utils"
+	//jsonData "Open_IM/internal/utils"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	rpc "Open_IM/pkg/proto/friend"
-	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
+	//open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
@@ -301,51 +301,57 @@ func DeleteFriend(c *gin.Context) {
 // @Failure 400 {object} api.Swagger500Resp "errCode为400 一般为参数输入错误, token未带上等"
 // @Router /friend/get_black_list [post]
 func GetBlacklist(c *gin.Context) {
-	params := api.GetBlackListReq{}
-	if err := c.BindJSON(&params); err != nil {
-		log.NewError("0", "BindJSON failed ", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-	req := &rpc.GetBlacklistReq{CommID: &rpc.CommID{}}
-	utils.CopyStructFields(req.CommID, &params)
-
-	var ok bool
-	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
-	if !ok {
-		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-
-	log.NewInfo(req.CommID.OperationID, "GetBlacklist args ", req.String())
-
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
-	if etcdConn == nil {
-		errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewFriendClient(etcdConn)
-	RpcResp, err := client.GetBlacklist(context.Background(), req)
-	if err != nil {
-		log.NewError(req.CommID.OperationID, "GetBlacklist failed ", err.Error(), req.String())
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get blacklist rpc server failed"})
-		return
-	}
-
-	resp := api.GetBlackListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}}
-	for _, v := range RpcResp.BlackUserInfoList {
-		black := open_im_sdk.PublicUserInfo{}
-		utils.CopyStructFields(&black, v)
-		resp.BlackUserInfoList = append(resp.BlackUserInfoList, &black)
-	}
-	resp.Data = jsonData.JsonDataList(resp.BlackUserInfoList)
-	log.NewInfo(req.CommID.OperationID, "GetBlacklist api return ", resp)
-	c.JSON(http.StatusOK, resp)
+	//params := api.GetBlackListReq{}
+	//if err := c.BindJSON(&params); err != nil {
+	//	log.NewError("0", "BindJSON failed ", err.Error())
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
+	//	return
+	//}
+	//req := &rpc.GetBlacklistReq{CommID: &rpc.CommID{}}
+	//utils.CopyStructFields(req.CommID, &params)
+	//
+	//var ok bool
+	//var errInfo string
+	//ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	//if !ok {
+	//	errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//
+	//log.NewInfo(req.CommID.OperationID, "GetBlacklist args ", req.String())
+	//
+	//etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
+	//if etcdConn == nil {
+	//	errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//client := rpc.NewFriendClient(etcdConn)
+	//RpcResp, err := client.GetBlacklist(context.Background(), req)
+	//if err != nil {
+	//	log.NewError(req.CommID.OperationID, "GetBlacklist failed ", err.Error(), req.String())
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get blacklist rpc server failed"})
+	//	return
+	//}
+	//
+	//resp := api.GetBlackListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}}
+	//for _, v := range RpcResp.BlackUserInfoList {
+	//	black := open_im_sdk.PublicUserInfo{}
+	//	utils.CopyStructFields(&black, v)
+	//	resp.BlackUserInfoList = append(resp.BlackUserInfoList, &black)
+	//}
+	//resp.Data = jsonData.JsonDataList(resp.BlackUserInfoList)
+	//log.NewInfo(req.CommID.OperationID, "GetBlacklist api return ", resp)
+	//c.JSON(http.StatusOK, resp)
+	data := make([]int, 0)
+	c.JSON(http.StatusOK, gin.H{
+		"errCode":       0,
+		"errMsg":        "",
+		"data": data,
+	})
 }
 
 // @Summary 设置好友备注
@@ -524,47 +530,53 @@ func IsFriend(c *gin.Context) {
 // @Failure 400 {object} api.Swagger400Resp "errCode为400 一般为参数输入错误, token未带上等"
 // @Router /friend/get_friend_list [post]
 func GetFriendList(c *gin.Context) {
-	params := api.GetFriendListReq{}
-	if err := c.BindJSON(&params); err != nil {
-		log.NewError("0", "BindJSON failed ", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-	req := &rpc.GetFriendListReq{CommID: &rpc.CommID{}}
-	utils.CopyStructFields(req.CommID, &params)
-
-	var ok bool
-	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
-	if !ok {
-		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-
-	log.NewInfo(req.CommID.OperationID, "GetFriendList args ", req.String())
-
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
-	if etcdConn == nil {
-		errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewFriendClient(etcdConn)
-	RpcResp, err := client.GetFriendList(context.Background(), req)
-	if err != nil {
-		log.NewError(req.CommID.OperationID, "GetFriendList failed ", err.Error(), req.String())
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get friend list rpc server failed"})
-		return
-	}
-
-	resp := api.GetFriendListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendInfoList: RpcResp.FriendInfoList}
-	resp.Data = jsonData.JsonDataList(resp.FriendInfoList)
-	log.NewInfo(req.CommID.OperationID, "GetFriendList api return ", resp)
-	c.JSON(http.StatusOK, resp)
+	//params := api.GetFriendListReq{}
+	//if err := c.BindJSON(&params); err != nil {
+	//	log.NewError("0", "BindJSON failed ", err.Error())
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
+	//	return
+	//}
+	//req := &rpc.GetFriendListReq{CommID: &rpc.CommID{}}
+	//utils.CopyStructFields(req.CommID, &params)
+	//
+	//var ok bool
+	//var errInfo string
+	//ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	//if !ok {
+	//	errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//
+	//log.NewInfo(req.CommID.OperationID, "GetFriendList args ", req.String())
+	//
+	//etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
+	//if etcdConn == nil {
+	//	errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//client := rpc.NewFriendClient(etcdConn)
+	//RpcResp, err := client.GetFriendList(context.Background(), req)
+	//if err != nil {
+	//	log.NewError(req.CommID.OperationID, "GetFriendList failed ", err.Error(), req.String())
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get friend list rpc server failed"})
+	//	return
+	//}
+	//
+	//resp := api.GetFriendListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendInfoList: RpcResp.FriendInfoList}
+	//resp.Data = jsonData.JsonDataList(resp.FriendInfoList)
+	//log.NewInfo(req.CommID.OperationID, "GetFriendList api return ", resp)
 	//c.JSON(http.StatusOK, resp)
+	//c.JSON(http.StatusOK, resp)
+	data := make([]int, 0)
+	c.JSON(http.StatusOK, gin.H{
+		"errCode":       0,
+		"errMsg":        "",
+		"data": data,
+	})
 }
 
 // @Summary 获取好友申请列表
@@ -580,47 +592,54 @@ func GetFriendList(c *gin.Context) {
 // @Failure 400 {object} api.Swagger400Resp "errCode为400 一般为参数输入错误, token未带上等"
 // @Router /friend/get_friend_apply_list [post]
 func GetFriendApplyList(c *gin.Context) {
-	params := api.GetFriendApplyListReq{}
-	if err := c.BindJSON(&params); err != nil {
-		log.NewError("0", "BindJSON failed ", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-	req := &rpc.GetFriendApplyListReq{CommID: &rpc.CommID{}}
-	utils.CopyStructFields(req.CommID, &params)
+	//params := api.GetFriendApplyListReq{}
+	//if err := c.BindJSON(&params); err != nil {
+	//	log.NewError("0", "BindJSON failed ", err.Error())
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
+	//	return
+	//}
+	//req := &rpc.GetFriendApplyListReq{CommID: &rpc.CommID{}}
+	//utils.CopyStructFields(req.CommID, &params)
+	//
+	//var ok bool
+	//var errInfo string
+	//ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	//if !ok {
+	//	errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//
+	//log.NewInfo(req.CommID.OperationID, "GetFriendApplyList args ", req.String())
+	//
+	//etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
+	//if etcdConn == nil {
+	//	errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//client := rpc.NewFriendClient(etcdConn)
+	//
+	//RpcResp, err := client.GetFriendApplyList(context.Background(), req)
+	//if err != nil {
+	//	log.NewError(req.CommID.OperationID, "GetFriendApplyList failed ", err.Error(), req.String())
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get friend apply list rpc server failed"})
+	//	return
+	//}
+	//
+	//resp := api.GetFriendApplyListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendRequestList: RpcResp.FriendRequestList}
+	//resp.Data = jsonData.JsonDataList(resp.FriendRequestList)
+	//log.NewInfo(req.CommID.OperationID, "GetFriendApplyList api return ", resp)
+	//c.JSON(http.StatusOK, resp)
+	data := make([]int, 0)
+	c.JSON(http.StatusOK, gin.H{
+		"errCode":       0,
+		"errMsg":        "",
+		"data": data,
+	})
 
-	var ok bool
-	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
-	if !ok {
-		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-
-	log.NewInfo(req.CommID.OperationID, "GetFriendApplyList args ", req.String())
-
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
-	if etcdConn == nil {
-		errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewFriendClient(etcdConn)
-
-	RpcResp, err := client.GetFriendApplyList(context.Background(), req)
-	if err != nil {
-		log.NewError(req.CommID.OperationID, "GetFriendApplyList failed ", err.Error(), req.String())
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get friend apply list rpc server failed"})
-		return
-	}
-
-	resp := api.GetFriendApplyListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendRequestList: RpcResp.FriendRequestList}
-	resp.Data = jsonData.JsonDataList(resp.FriendRequestList)
-	log.NewInfo(req.CommID.OperationID, "GetFriendApplyList api return ", resp)
-	c.JSON(http.StatusOK, resp)
 }
 
 // @Summary 获取自己的好友申请列表
@@ -636,43 +655,49 @@ func GetFriendApplyList(c *gin.Context) {
 // @Failure 400 {object} api.Swagger400Resp "errCode为400 一般为参数输入错误, token未带上等"
 // @Router /friend/get_self_friend_apply_list [post]
 func GetSelfFriendApplyList(c *gin.Context) {
-	params := api.GetSelfApplyListReq{}
-	if err := c.BindJSON(&params); err != nil {
-		log.NewError("0", "BindJSON failed ", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-	req := &rpc.GetSelfApplyListReq{CommID: &rpc.CommID{}}
-	utils.CopyStructFields(req.CommID, &params)
-
-	var ok bool
-	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
-	if !ok {
-		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-
-	log.NewInfo(req.CommID.OperationID, "GetSelfApplyList args ", req.String())
-
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
-	if etcdConn == nil {
-		errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.CommID.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewFriendClient(etcdConn)
-	RpcResp, err := client.GetSelfApplyList(context.Background(), req)
-	if err != nil {
-		log.NewError(req.CommID.OperationID, "GetSelfApplyList failed ", err.Error(), req.String())
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get self apply list rpc server failed"})
-		return
-	}
-	resp := api.GetSelfApplyListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendRequestList: RpcResp.FriendRequestList}
-	resp.Data = jsonData.JsonDataList(resp.FriendRequestList)
-	log.NewInfo(req.CommID.OperationID, "GetSelfApplyList api return ", resp)
-	c.JSON(http.StatusOK, resp)
+	//params := api.GetSelfApplyListReq{}
+	//if err := c.BindJSON(&params); err != nil {
+	//	log.NewError("0", "BindJSON failed ", err.Error())
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
+	//	return
+	//}
+	//req := &rpc.GetSelfApplyListReq{CommID: &rpc.CommID{}}
+	//utils.CopyStructFields(req.CommID, &params)
+	//
+	//var ok bool
+	//var errInfo string
+	//ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	//if !ok {
+	//	errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//
+	//log.NewInfo(req.CommID.OperationID, "GetSelfApplyList args ", req.String())
+	//
+	//etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.CommID.OperationID)
+	//if etcdConn == nil {
+	//	errMsg := req.CommID.OperationID + "getcdv3.GetDefaultConn == nil"
+	//	log.NewError(req.CommID.OperationID, errMsg)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
+	//	return
+	//}
+	//client := rpc.NewFriendClient(etcdConn)
+	//RpcResp, err := client.GetSelfApplyList(context.Background(), req)
+	//if err != nil {
+	//	log.NewError(req.CommID.OperationID, "GetSelfApplyList failed ", err.Error(), req.String())
+	//	c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call get self apply list rpc server failed"})
+	//	return
+	//}
+	//resp := api.GetSelfApplyListResp{CommResp: api.CommResp{ErrCode: RpcResp.ErrCode, ErrMsg: RpcResp.ErrMsg}, FriendRequestList: RpcResp.FriendRequestList}
+	//resp.Data = jsonData.JsonDataList(resp.FriendRequestList)
+	//log.NewInfo(req.CommID.OperationID, "GetSelfApplyList api return ", resp)
+	//c.JSON(http.StatusOK, resp)
+	data := make([]int, 0)
+	c.JSON(http.StatusOK, gin.H{
+		"errCode":       0,
+		"errMsg":        "",
+		"data": data,
+	})
 }
