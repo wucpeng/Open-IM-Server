@@ -119,6 +119,9 @@ func (d *DataBases) BatchInsertChat2Mongo(userID string, msgList []*pbMsg.MsgDat
 		sMsg := MsgInfo{}
 		sMsg.SendTime = m.MsgData.SendTime
 		m.MsgData.Seq = uint32(currentMaxSeq)
+		if m.MsgData.Seq == 0 {
+			m.MsgData.Seq = uint32(currentMaxSeq)
+		}
 		log.Info(operationID, "msg node ", m.MsgData.Seq, currentMaxSeq, m.MsgData.ClientMsgID)
 		if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
 			return utils.Wrap(err, "")

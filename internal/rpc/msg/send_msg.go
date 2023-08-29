@@ -10,7 +10,7 @@ import (
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
-	cacheRpc "Open_IM/pkg/proto/cache"
+	//cacheRpc "Open_IM/pkg/proto/cache"
 	//pbConversation "Open_IM/pkg/proto/conversation"
 	pbChat "Open_IM/pkg/proto/msg"
 	pbPush "Open_IM/pkg/proto/push"
@@ -93,6 +93,19 @@ func isMessageHasReadEnabled(pb *pbChat.SendMsgReq) (bool, int32, string) {
 	return true, 0, ""
 }
 
+func modifyOwnerUnreadTime(userID, conversationID string, UpdateUnreadCountTime int64) error {
+	log.Info(userID, utils.GetSelfFuncName(), userID, conversationID, UpdateUnreadCountTime)
+	err := imdb.UpdateColumnsConversation(userID, conversationID, map[string]interface{}{"update_unread_count_time": UpdateUnreadCountTime})
+	if err != nil {
+		return err
+	}
+	err = rocksCache.DelConversationFromCache(userID, conversationID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, string, []string) {
 	switch data.MsgData.SessionType {
 	case constant.SingleChatType:
@@ -103,53 +116,54 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 			return true, 0, "", nil
 		}
 		//log.NewDebug(data.OperationID, config.Config.MessageVerify.FriendVerify)
-		reqGetBlackIDListFromCache := &cacheRpc.GetBlackIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
-		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
-		if etcdConn == nil {
-			errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(data.OperationID, errMsg)
-			return true, 0, "", nil
-		}
-
-		cacheClient := cacheRpc.NewCacheClient(etcdConn)
-		cacheResp, err := cacheClient.GetBlackIDListFromCache(context.Background(), reqGetBlackIDListFromCache)
-		if err != nil {
-			log.NewError(data.OperationID, "GetBlackIDListFromCache rpc call failed ", err.Error())
-		} else {
-			if cacheResp.CommonResp.ErrCode != 0 {
-				log.NewError(data.OperationID, "GetBlackIDListFromCache rpc logic call failed ", cacheResp.String())
-			} else {
-				if utils.IsContain(data.MsgData.SendID, cacheResp.UserIDList) {
-					return false, 600, "in black list", nil
-				}
-			}
-		}
+		//reqGetBlackIDListFromCache := &cacheRpc.GetBlackIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
+		//etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
+		//if etcdConn == nil {
+		//	errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
+		//	log.NewError(data.OperationID, errMsg)
+		//	return true, 0, "", nil
+		//}
+		//
+		//cacheClient := cacheRpc.NewCacheClient(etcdConn)
+		//cacheResp, err := cacheClient.GetBlackIDListFromCache(context.Background(), reqGetBlackIDListFromCache)
+		//if err != nil {
+		//	log.NewError(data.OperationID, "GetBlackIDListFromCache rpc call failed ", err.Error())
+		//} else {
+		//	if cacheResp.CommonResp.ErrCode != 0 {
+		//		log.NewError(data.OperationID, "GetBlackIDListFromCache rpc logic call failed ", cacheResp.String())
+		//	} else {
+		//		if utils.IsContain(data.MsgData.SendID, cacheResp.UserIDList) {
+		//			return false, 600, "in black list", nil
+		//		}
+		//	}
+		//}
 		//log.NewDebug(data.OperationID, config.Config.MessageVerify.FriendVerify)
-		if config.Config.MessageVerify.FriendVerify { //hzt无效
-			reqGetFriendIDListFromCache := &cacheRpc.GetFriendIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
-			etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
-			if etcdConn == nil {
-				errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
-				log.NewError(data.OperationID, errMsg)
-				return true, 0, "", nil
-			}
-			cacheClient := cacheRpc.NewCacheClient(etcdConn)
-			cacheResp, err := cacheClient.GetFriendIDListFromCache(context.Background(), reqGetFriendIDListFromCache)
-			if err != nil {
-				log.NewError(data.OperationID, "GetFriendIDListFromCache rpc call failed ", err.Error())
-			} else {
-				if cacheResp.CommonResp.ErrCode != 0 {
-					log.NewError(data.OperationID, "GetFriendIDListFromCache rpc logic call failed ", cacheResp.String())
-				} else {
-					if !utils.IsContain(data.MsgData.SendID, cacheResp.UserIDList) {
-						return false, 601, "not friend", nil
-					}
-				}
-			}
-			return true, 0, "", nil
-		} else {
-			return true, 0, "", nil
-		}
+		//if config.Config.MessageVerify.FriendVerify { //hzt无效
+		//	reqGetFriendIDListFromCache := &cacheRpc.GetFriendIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
+		//	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
+		//	if etcdConn == nil {
+		//		errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
+		//		log.NewError(data.OperationID, errMsg)
+		//		return true, 0, "", nil
+		//	}
+		//	cacheClient := cacheRpc.NewCacheClient(etcdConn)
+		//	cacheResp, err := cacheClient.GetFriendIDListFromCache(context.Background(), reqGetFriendIDListFromCache)
+		//	if err != nil {
+		//		log.NewError(data.OperationID, "GetFriendIDListFromCache rpc call failed ", err.Error())
+		//	} else {
+		//		if cacheResp.CommonResp.ErrCode != 0 {
+		//			log.NewError(data.OperationID, "GetFriendIDListFromCache rpc logic call failed ", cacheResp.String())
+		//		} else {
+		//			if !utils.IsContain(data.MsgData.SendID, cacheResp.UserIDList) {
+		//				return false, 601, "not friend", nil
+		//			}
+		//		}
+		//	}
+		//	return true, 0, "", nil
+		//} else {
+		//	return true, 0, "", nil
+		//}
+		return true, 0, "", nil
 	case constant.GroupChatType:
 		fallthrough
 	case constant.SuperGroupChatType:
@@ -333,14 +347,9 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 				}
 			}
 		}
-		// callback
-		//t1 = time.Now()
-		//callbackResp = callbackAfterSendSingleMsg(pb)
-		////log.Info(pb.OperationID, "callbackAfterSendSingleMsg ", " cost time: ", time.Since(t1))
-		//if callbackResp.ErrCode != 0 {
-		//	log.NewError(pb.OperationID, utils.GetSelfFuncName(), "callbackAfterSendSingleMsg resp: ", callbackResp)
-		//}
 		go callbackAfterSendSingleMsg(pb)
+		//convType := utils.GetConversationIDBySessionType(pb.MsgData.RecvID, constant.SingleChatType)
+		//go modifyOwnerUnreadTime(pb.MsgData.SendID, convType, pb.MsgData.SendTime)
 		promePkg.PromeInc(promePkg.SingleChatMsgProcessSuccessCounter)
 		return returnMsg(&replay, pb, 0, "", msgToMQSingle.MsgData.ServerMsgID, msgToMQSingle.MsgData.SendTime)
 	case constant.GroupChatType:

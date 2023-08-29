@@ -132,7 +132,7 @@ func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int
 		log.NewInfo(operationID, "MultiTerminalLoginCheck resp ", resp.String())
 	}
 }
-
+//各个rpc服务轮询
 func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int, token string, operationID string) {
 	rwLock.Lock()
 	defer rwLock.Unlock()
@@ -190,7 +190,7 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 	case constant.WebAndOther:
 	}
 }
-
+//本地处理
 func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn *UserConn, token string, operationID string) {
 	switch config.Config.MultiLoginPolicy {
 	case constant.PCAndOther:

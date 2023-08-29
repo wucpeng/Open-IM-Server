@@ -75,37 +75,6 @@ func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.Pull
 		promePkg.PromeAdd(promePkg.MsgPullFromRedisSuccessCounter, len(redisMsgList))
 		resp.List = redisMsgList
 	}
-
-	//for k, v := range in.GroupSeqList {
-	//	x := new(open_im_sdk.MsgDataList)
-	//	redisMsgList, failedSeqList, err := commonDB.DB.GetMessageListBySeq(k, v.SeqList, in.OperationID)
-	//	if err != nil {
-	//		if err != go_redis.Nil {
-	//			promePkg.PromeAdd(promePkg.MsgPullFromRedisFailedCounter, len(failedSeqList))
-	//			log.Error(in.OperationID, "get message from redis exception", err.Error(), failedSeqList)
-	//		} else {
-	//			log.Debug(in.OperationID, "get message from redis is nil", failedSeqList)
-	//		}
-	//		msgList, err1 := commonDB.DB.GetSuperGroupMsgBySeqListMongo(k, failedSeqList, in.OperationID)
-	//		if err1 != nil {
-	//			promePkg.PromeAdd(promePkg.MsgPullFromMongoFailedCounter, len(failedSeqList))
-	//			log.Error(in.OperationID, "PullMessageBySeqList data error", in.String(), err.Error())
-	//			resp.ErrCode = 201
-	//			resp.ErrMsg = err.Error()
-	//			return resp, nil
-	//		} else {
-	//			promePkg.PromeAdd(promePkg.MsgPullFromMongoSuccessCounter, len(msgList))
-	//			redisMsgList = append(redisMsgList, msgList...)
-	//			x.MsgDataList = redisMsgList
-	//			m[k] = x
-	//		}
-	//	} else {
-	//		promePkg.PromeAdd(promePkg.MsgPullFromRedisSuccessCounter, len(redisMsgList))
-	//		x.MsgDataList = redisMsgList
-	//		m[k] = x
-	//	}
-	//}
-	//resp.GroupMsgDataList = m
 	return resp, nil
 }
 
