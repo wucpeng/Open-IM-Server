@@ -391,15 +391,6 @@ func (d *DataBases) DelMsgFromCache(uid string, seqList []uint32, operationID st
 	}
 }
 
-func (d *DataBases) SetGetuiToken(token string, expireTime int64) error {
-	return d.RDB.Set(context.Background(), getuiToken, token, time.Duration(expireTime)*time.Second).Err()
-}
-
-func (d *DataBases) GetGetuiToken() (string, error) {
-	result, err := d.RDB.Get(context.Background(), getuiToken).Result()
-	return result, err
-}
-
 func (d *DataBases) SetSendMsgStatus(status int32, operationID string) error {
 	return d.RDB.Set(context.Background(), sendMsgFailedFlag+operationID, status, time.Hour*24).Err()
 }
@@ -413,6 +404,7 @@ func (d *DataBases) GetSendMsgStatus(operationID string) (int, error) {
 	return status, err
 }
 
+//firebase cloud message 消息推送
 func (d *DataBases) SetFcmToken(account string, platformid int, fcmToken string, expireTime int64) (err error) {
 	key := FcmToken + account + ":" + strconv.Itoa(platformid)
 	return d.RDB.Set(context.Background(), key, fcmToken, time.Duration(expireTime)*time.Second).Err()
@@ -435,4 +427,14 @@ func (d *DataBases) GetUserBadgeUnreadCountSum(uid string) (int, error) {
 	key := userBadgeUnreadCountSum + uid
 	seq, err := d.RDB.Get(context.Background(), key).Result()
 	return utils.StringToInt(seq), err
+}
+
+//个推
+func (d *DataBases) SetGetuiToken(token string, expireTime int64) error {
+	return d.RDB.Set(context.Background(), getuiToken, token, time.Duration(expireTime)*time.Second).Err()
+}
+
+func (d *DataBases) GetGetuiToken() (string, error) {
+	result, err := d.RDB.Get(context.Background(), getuiToken).Result()
+	return result, err
 }

@@ -13,7 +13,7 @@ type Statistics struct {
 }
 
 func (s *Statistics) output() {
-	var intervalCount uint64
+	var intervalCount int64
 	t := time.NewTicker(time.Duration(s.SleepTime) * time.Second)
 	defer t.Stop()
 	var sum uint64
@@ -26,7 +26,7 @@ func (s *Statistics) output() {
 		if *s.AllCount-sum <= 0 {
 			intervalCount = 0
 		} else {
-			intervalCount = *s.AllCount - sum
+			intervalCount = int64(*s.AllCount - sum)
 		}
 		timeIntervalNum++
 		//system stat  									   msg_gateway  60 second add user conn 0     total:   4             intervalNum 5022               avg 0

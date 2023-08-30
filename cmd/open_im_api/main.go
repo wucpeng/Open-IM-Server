@@ -9,9 +9,9 @@ import (
 	"Open_IM/internal/api/group"
 	"Open_IM/internal/api/manage"
 	apiChat "Open_IM/internal/api/msg"
-	"Open_IM/internal/api/office"
-	"Open_IM/internal/api/organization"
-	apiThird "Open_IM/internal/api/third"
+	//"Open_IM/internal/api/office"
+	//"Open_IM/internal/api/organization"
+	//apiThird "Open_IM/internal/api/third"
 	"Open_IM/internal/api/user"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/log"
@@ -62,17 +62,17 @@ func main() {
 	userRouterGroup := r.Group("/user")
 	{
 		userRouterGroup.POST("/update_user_info", user.UpdateUserInfo) //1
-		userRouterGroup.POST("/set_global_msg_recv_opt", user.SetGlobalRecvMessageOpt)
-		userRouterGroup.POST("/get_users_info", user.GetUsersPublicInfo)            //1
-		userRouterGroup.POST("/get_self_user_info", user.GetSelfUserInfo)           //1
-		userRouterGroup.POST("/get_users_online_status", user.GetUsersOnlineStatus) //1
+		userRouterGroup.POST("/set_global_msg_recv_opt", user.SetGlobalRecvMessageOpt)     //deprecated
+		userRouterGroup.POST("/get_users_info", user.GetUsersPublicInfo)
+		userRouterGroup.POST("/get_self_user_info", user.GetSelfUserInfo)
+		userRouterGroup.POST("/get_users_online_status", user.GetUsersOnlineStatus)        //deprecated
 		userRouterGroup.POST("/get_users_info_from_cache", user.GetUsersInfoFromCache)
-		userRouterGroup.POST("/get_user_friend_from_cache", user.GetFriendIDListFromCache)
-		userRouterGroup.POST("/get_black_list_from_cache", user.GetBlackIDListFromCache)
-		userRouterGroup.POST("/get_all_users_uid", manage.GetAllUsersUid) //1
-		userRouterGroup.POST("/account_check", manage.AccountCheck)       //1
+		userRouterGroup.POST("/get_user_friend_from_cache", user.GetFriendIDListFromCache) //deprecated
+		userRouterGroup.POST("/get_black_list_from_cache", user.GetBlackIDListFromCache)   //deprecated
+		userRouterGroup.POST("/get_all_users_uid", manage.GetAllUsersUid) 				   //deprecated
+		userRouterGroup.POST("/account_check", manage.AccountCheck)						   //deprecated
 		//	userRouterGroup.POST("/get_users_online_status", manage.GetUsersOnlineStatus) //1
-		userRouterGroup.POST("/get_users", user.GetUsers)
+		userRouterGroup.POST("/get_users", user.GetUsers)									//deprecated
 		userRouterGroup.POST("/token_info", user.CheckToken)
 	}
 	//friend routing group
@@ -136,20 +136,20 @@ func main() {
 		authRouterGroup.POST("/force_logout", apiAuth.ForceLogout)   //1
 	}
 	//Third service
-	thirdGroup := r.Group("/third")
-	{
-		thirdGroup.POST("/tencent_cloud_storage_credential", apiThird.TencentCloudStorageCredential)
-		thirdGroup.POST("/ali_oss_credential", apiThird.AliOSSCredential)
-		thirdGroup.POST("/minio_storage_credential", apiThird.MinioStorageCredential)
-		thirdGroup.POST("/minio_upload", apiThird.MinioUploadFile)
-		thirdGroup.POST("/upload_update_app", apiThird.UploadUpdateApp)
-		thirdGroup.POST("/get_download_url", apiThird.GetDownloadURL)
-		thirdGroup.POST("/get_rtc_invitation_info", apiThird.GetRTCInvitationInfo)
-		thirdGroup.POST("/get_rtc_invitation_start_app", apiThird.GetRTCInvitationInfoStartApp)
-		thirdGroup.POST("/fcm_update_token", apiThird.FcmUpdateToken)
-		thirdGroup.POST("/aws_storage_credential", apiThird.AwsStorageCredential)
-		thirdGroup.POST("/set_app_badge", apiThird.SetAppBadge)
-	}
+	//thirdGroup := r.Group("/third")
+	//{
+	//	thirdGroup.POST("/tencent_cloud_storage_credential", apiThird.TencentCloudStorageCredential)
+	//	thirdGroup.POST("/ali_oss_credential", apiThird.AliOSSCredential)
+	//	thirdGroup.POST("/minio_storage_credential", apiThird.MinioStorageCredential)
+	//	thirdGroup.POST("/minio_upload", apiThird.MinioUploadFile)
+	//	thirdGroup.POST("/upload_update_app", apiThird.UploadUpdateApp)
+	//	thirdGroup.POST("/get_download_url", apiThird.GetDownloadURL)
+	//	thirdGroup.POST("/get_rtc_invitation_info", apiThird.GetRTCInvitationInfo)
+	//	thirdGroup.POST("/get_rtc_invitation_start_app", apiThird.GetRTCInvitationInfoStartApp)
+	//	thirdGroup.POST("/fcm_update_token", apiThird.FcmUpdateToken)
+	//	thirdGroup.POST("/aws_storage_credential", apiThird.AwsStorageCredential)
+	//	thirdGroup.POST("/set_app_badge", apiThird.SetAppBadge)
+	//}
 	//Message
 	chatGroup := r.Group("/msg")
 	{
@@ -175,57 +175,57 @@ func main() {
 	conversationGroup := r.Group("/conversation")
 	{ //1
 		conversationGroup.POST("/get_all_conversations", conversation.GetAllConversations)
-		conversationGroup.POST("/get_conversation", conversation.GetConversation)
-		conversationGroup.POST("/get_conversations", conversation.GetConversations)
-		conversationGroup.POST("/set_conversation", conversation.SetConversation)
+		conversationGroup.POST("/get_conversation", conversation.GetConversation)   //deprecated
+		conversationGroup.POST("/get_conversations", conversation.GetConversations) //deprecated
+		conversationGroup.POST("/set_conversation", conversation.SetConversation)   //deprecated
+		conversationGroup.POST("/set_recv_msg_opt", conversation.SetRecvMsgOpt)     //deprecated
 		conversationGroup.POST("/batch_set_conversation", conversation.BatchSetConversations)
-		conversationGroup.POST("/set_recv_msg_opt", conversation.SetRecvMsgOpt)
 		conversationGroup.POST("/modify_conversation_field", conversation.ModifyConversationField)
 	}
 	// office
-	officeGroup := r.Group("/office")
-	{
-		officeGroup.POST("/get_user_tags", office.GetUserTags)
-		officeGroup.POST("/get_user_tag_by_id", office.GetUserTagByID)
-		officeGroup.POST("/create_tag", office.CreateTag)
-		officeGroup.POST("/delete_tag", office.DeleteTag)
-		officeGroup.POST("/set_tag", office.SetTag)
-		officeGroup.POST("/send_msg_to_tag", office.SendMsg2Tag)
-		officeGroup.POST("/get_send_tag_log", office.GetTagSendLogs)
+	//officeGroup := r.Group("/office")
+	//{
+	//	officeGroup.POST("/get_user_tags", office.GetUserTags)
+	//	officeGroup.POST("/get_user_tag_by_id", office.GetUserTagByID)
+	//	officeGroup.POST("/create_tag", office.CreateTag)
+	//	officeGroup.POST("/delete_tag", office.DeleteTag)
+	//	officeGroup.POST("/set_tag", office.SetTag)
+	//	officeGroup.POST("/send_msg_to_tag", office.SendMsg2Tag)
+	//	officeGroup.POST("/get_send_tag_log", office.GetTagSendLogs)
+	//
+	//	officeGroup.POST("/create_one_work_moment", office.CreateOneWorkMoment)
+	//	officeGroup.POST("/delete_one_work_moment", office.DeleteOneWorkMoment)
+	//	officeGroup.POST("/like_one_work_moment", office.LikeOneWorkMoment)
+	//	officeGroup.POST("/comment_one_work_moment", office.CommentOneWorkMoment)
+	//	officeGroup.POST("/get_work_moment_by_id", office.GetWorkMomentByID)
+	//	officeGroup.POST("/get_user_work_moments", office.GetUserWorkMoments)
+	//	officeGroup.POST("/get_user_friend_work_moments", office.GetUserFriendWorkMoments)
+	//	officeGroup.POST("/set_user_work_moments_level", office.SetUserWorkMomentsLevel)
+	//	officeGroup.POST("/delete_comment", office.DeleteComment)
+	//}
 
-		officeGroup.POST("/create_one_work_moment", office.CreateOneWorkMoment)
-		officeGroup.POST("/delete_one_work_moment", office.DeleteOneWorkMoment)
-		officeGroup.POST("/like_one_work_moment", office.LikeOneWorkMoment)
-		officeGroup.POST("/comment_one_work_moment", office.CommentOneWorkMoment)
-		officeGroup.POST("/get_work_moment_by_id", office.GetWorkMomentByID)
-		officeGroup.POST("/get_user_work_moments", office.GetUserWorkMoments)
-		officeGroup.POST("/get_user_friend_work_moments", office.GetUserFriendWorkMoments)
-		officeGroup.POST("/set_user_work_moments_level", office.SetUserWorkMomentsLevel)
-		officeGroup.POST("/delete_comment", office.DeleteComment)
-	}
-
-	organizationGroup := r.Group("/organization")
-	{
-		//organizationGroup.POST("/get_sub_department", organization.GetSubDepartment)
-		//organizationGroup.POST("/get_department_member", organization.GetDepartmentMember)
-
-		organizationGroup.POST("/create_department", organization.CreateDepartment)
-		organizationGroup.POST("/update_department", organization.UpdateDepartment)
-
-		organizationGroup.POST("/delete_department", organization.DeleteDepartment)
-		organizationGroup.POST("/get_all_department", organization.GetAllDepartment)
-
-		organizationGroup.POST("/create_organization_user", organization.CreateOrganizationUser)
-		organizationGroup.POST("/update_organization_user", organization.UpdateOrganizationUser)
-		organizationGroup.POST("/delete_organization_user", organization.DeleteOrganizationUser)
-
-		organizationGroup.POST("/create_department_member", organization.CreateDepartmentMember)
-		organizationGroup.POST("/get_user_in_department", organization.GetUserInDepartment)
-		organizationGroup.POST("/update_user_in_department", organization.UpdateUserInDepartment)
-
-		organizationGroup.POST("/delete_user_in_department", organization.DeleteUserInDepartment)
-		organizationGroup.POST("/get_user_in_organization", organization.GetUserInOrganization)
-	}
+	//organizationGroup := r.Group("/organization")
+	//{
+	//	//organizationGroup.POST("/get_sub_department", organization.GetSubDepartment)
+	//	//organizationGroup.POST("/get_department_member", organization.GetDepartmentMember)
+	//
+	//	organizationGroup.POST("/create_department", organization.CreateDepartment)
+	//	organizationGroup.POST("/update_department", organization.UpdateDepartment)
+	//
+	//	organizationGroup.POST("/delete_department", organization.DeleteDepartment)
+	//	organizationGroup.POST("/get_all_department", organization.GetAllDepartment)
+	//
+	//	organizationGroup.POST("/create_organization_user", organization.CreateOrganizationUser)
+	//	organizationGroup.POST("/update_organization_user", organization.UpdateOrganizationUser)
+	//	organizationGroup.POST("/delete_organization_user", organization.DeleteOrganizationUser)
+	//
+	//	organizationGroup.POST("/create_department_member", organization.CreateDepartmentMember)
+	//	organizationGroup.POST("/get_user_in_department", organization.GetUserInDepartment)
+	//	organizationGroup.POST("/update_user_in_department", organization.UpdateUserInDepartment)
+	//
+	//	organizationGroup.POST("/delete_user_in_department", organization.DeleteUserInDepartment)
+	//	organizationGroup.POST("/get_user_in_organization", organization.GetUserInOrganization)
+	//}
 
 	initGroup := r.Group("/init")
 	{
@@ -233,7 +233,7 @@ func main() {
 		initGroup.POST("/get_client_config", clientInit.GetClientInitConfig)
 	}
 
-	go apiThird.MinioInit()
+	//go apiThird.MinioInit()
 	defaultPorts := config.Config.Api.GinPort
 	ginPort := flag.Int("port", defaultPorts[0], "get ginServerPort from cmd,default 10002 as port")
 	flag.Parse()

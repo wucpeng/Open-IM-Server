@@ -3,6 +3,7 @@ package conversation
 import (
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
+	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbConversation "Open_IM/pkg/proto/conversation"
@@ -65,6 +66,9 @@ func ModifyConversationField(c *gin.Context) {
 		return
 	}
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req)
+	if req.OwnerUserID == "111111111111111111111112" && req.FieldType == constant.FieldUnread {
+		req.UpdateUnreadCountTime = utils.GetCurrentTimestampByMill()
+	}
 	reqPb.Conversation = &pbConversation.Conversation{}
 	err := utils.CopyStructFields(&reqPb, req)
 	err = utils.CopyStructFields(reqPb.Conversation, req.Conversation)
