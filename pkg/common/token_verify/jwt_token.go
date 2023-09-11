@@ -148,7 +148,7 @@ func GetClaimFromToken(tokensString string) (*Claims, error) {
 			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
 				//log.NewInfo("xxxxxx", token.Valid)
 				if claims, ok := token.Claims.(*Claims); ok {
-					log.NewInfo("xxxxxx", claims.UID, claims.Platform)
+					//log.NewInfo("xxxxxx", claims.UID, claims.Platform)
 					return claims, nil
 				}
 				return nil, utils.Wrap(constant.ErrTokenExpired, "")
