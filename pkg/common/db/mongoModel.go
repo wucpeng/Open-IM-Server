@@ -1328,7 +1328,7 @@ func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) e
 }
 
 
-
+//1
 func (d *DataBases) CheckGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
@@ -1395,7 +1395,7 @@ func (d *DataBases) CheckGroupAllMsgList(uid string, operationID string) (seqMsg
 	}
 	return nil, nil
 }
-
+//2
 func (d *DataBases) ResizeGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
@@ -1502,7 +1502,7 @@ func (d *DataBases) ResizeGroupAllMsgList(uid string, operationID string) (seqMs
 	}
 	return nil, nil
 }
-
+//3
 func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
@@ -1536,7 +1536,7 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 				log.NewError(operationID, "Unmarshal err", uid, err.Error())
 				return nil, err
 			}
-			//log.NewError(operationID, "UserMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
+			log.NewError(operationID, "UserMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
 			if v, ok := mapContentCount[msg.ContentType]; ok {
 				mapContentCount[msg.ContentType] = v + 1
 			} else {
@@ -1545,11 +1545,11 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 		}
 	}
 	for k, v := range mapContentCount {
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "contentCount", k, v)
+		log.Error(operationID, utils.GetSelfFuncName(), "contentCount", k, v)
 	}
 	return nil, nil
 }
-
+//4
 func (d *DataBases) RemoveGroupSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
@@ -1602,6 +1602,100 @@ func (d *DataBases) RemoveGroupSystemMsgList(uid string, operationID string) (se
 			}
 		}
 	}
+	return nil, nil
+}
+
+//5
+func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetSort(bson.M{"uid": 1})
+	var userChats []UserChat2
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
+	allMsgs := make([]open_im_sdk.MsgData, 0)
+	sendTimes := make([]int64, 0)
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		for i := 0; i < len(userChat.Msg); i++ {
+			if userChat.Msg[i].SendTime == 0 {
+				continue
+			}
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if msg.ContentType < 1000 || msg.ContentType == 1501 {
+				allMsgs = append(allMsgs, *msg)
+				sendTimes = append(sendTimes, userChat.Msg[i].SendTime)
+			}
+		}
+		log.NewError(operationID, userChat.ID, userChat.UID)
+		modifyUidId := fmt.Sprintf("modify_%s", userChat.UID)
+		log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
+		objID, _ := primitive.ObjectIDFromHex(userChat.ID)
+		_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
+	}
+	var seq	uint32 = 1
+	mapUserChat := make(map[string]UserChat)
+	//uuid := getSeqUid(uid, uint32(i))
+	for i := 0; i < len(allMsgs); i++ {
+		allMsgs[i].Seq = seq
+		msg, err := proto.Marshal(&allMsgs[i])
+		if err != nil {
+			log.NewError(operationID, "userChat", err.Error())
+			return nil, err
+		}
+		msgInfo := MsgInfo{
+			Msg: msg,
+			SendTime: sendTimes[i],
+		}
+		uuid := getSeqUid(uid, seq)
+		if us, ok := mapUserChat[uuid]; ok {
+			us.Msg = append(us.Msg, msgInfo)
+			mapUserChat[uuid] = us
+		} else {
+			nuc := UserChat{
+				UID: uuid,
+				Msg: []MsgInfo{},
+			}
+			nuc.Msg = append(nuc.Msg, msgInfo)
+			mapUserChat[uuid] = nuc
+		}
+		seq++
+	}
+	for k, v := range mapUserChat {
+		if _, err = c.InsertOne(ctx, &v); err != nil {
+			log.NewError(operationID, "InsertOne failed", k, len(v.Msg), err.Error())
+			return nil, nil
+		}
+	}
+	if len(sendTimes) == 0 {
+		seq = 0
+	}
+	err = d.SetUserMaxSeq(uid, uint64(seq))
+	if err != nil {
+		log.NewError(operationID, "SetUserMaxSeq", uid, seq, err.Error())
+		return nil, err
+	}
+
 	return nil, nil
 }
 

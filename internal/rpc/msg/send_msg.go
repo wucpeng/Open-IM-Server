@@ -92,19 +92,19 @@ func isMessageHasReadEnabled(pb *pbChat.SendMsgReq) (bool, int32, string) {
 	}
 	return true, 0, ""
 }
-
-func modifyOwnerUnreadTime(userID, conversationID string, UpdateUnreadCountTime int64) error {
-	log.Info(userID, utils.GetSelfFuncName(), userID, conversationID, UpdateUnreadCountTime)
-	err := imdb.UpdateColumnsConversation(userID, conversationID, map[string]interface{}{"update_unread_count_time": UpdateUnreadCountTime})
-	if err != nil {
-		return err
-	}
-	err = rocksCache.DelConversationFromCache(userID, conversationID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+//
+//func modifyOwnerUnreadTime(userID, conversationID string, UpdateUnreadCountTime int64) error {
+//	log.Info(userID, utils.GetSelfFuncName(), userID, conversationID, UpdateUnreadCountTime)
+//	err := imdb.UpdateColumnsConversation(userID, conversationID, map[string]interface{}{"update_unread_count_time": UpdateUnreadCountTime})
+//	if err != nil {
+//		return err
+//	}
+//	err = rocksCache.DelConversationFromCache(userID, conversationID)
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, string, []string) {
 	switch data.MsgData.SessionType {
@@ -283,7 +283,12 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		return returnMsg(&replay, pb, errCode, errMsg, "", 0)
 	}
 	t1 := time.Now()
+	pb.MsgData.OfflinePushInfo = nil
+	//if pb.MsgData.ContentType == 110 {
+	//	pb.MsgData.AttachedInfo = ""
+	//}
 	rpc.encapsulateMsgData(pb.MsgData) // append  pb.MsgData.Options
+	log.Info(pb.OperationID, "rpc sendMsg come here ", pb.String())
 	msgToMQSingle := pbChat.MsgDataToMQ{Token: pb.Token, OperationID: pb.OperationID, MsgData: pb.MsgData}
 	//log.NewError(pb.OperationID, "SendMsg 1", time.Since(t1))
 	// callback
@@ -694,7 +699,7 @@ type NotificationMsg struct {
 func Notification(n *NotificationMsg) {
 	var req pbChat.SendMsgReq
 	var msg sdk_ws.MsgData
-	var offlineInfo sdk_ws.OfflinePushInfo
+	//var offlineInfo sdk_ws.OfflinePushInfo
 	var title, desc, ex string
 	var pushSwitch, unReadCount bool
 	var reliabilityLevel int
@@ -715,8 +720,8 @@ func Notification(n *NotificationMsg) {
 		msg.RecvID = ""
 		msg.GroupID = n.RecvID
 	}
-	offlineInfo.IOSBadgeCount = config.Config.IOSPush.BadgeCount
-	offlineInfo.IOSPushSound = config.Config.IOSPush.PushSound
+	//offlineInfo.IOSBadgeCount = config.Config.IOSPush.BadgeCount
+	//offlineInfo.IOSPushSound = config.Config.IOSPush.PushSound
 	switch msg.ContentType {
 	case constant.GroupCreatedNotification:
 		pushSwitch = config.Config.Notification.GroupCreated.OfflinePush.PushSwitch
@@ -972,13 +977,13 @@ func Notification(n *NotificationMsg) {
 }
 
 func valueCopy(pb *pbChat.SendMsgReq) *pbChat.SendMsgReq {
-	offlinePushInfo := sdk_ws.OfflinePushInfo{}
-	if pb.MsgData.OfflinePushInfo != nil {
-		offlinePushInfo = *pb.MsgData.OfflinePushInfo
-	}
+	//offlinePushInfo := sdk_ws.OfflinePushInfo{}
+	//if pb.MsgData.OfflinePushInfo != nil {
+	//	offlinePushInfo = *pb.MsgData.OfflinePushInfo
+	//}
 	msgData := sdk_ws.MsgData{}
 	msgData = *pb.MsgData
-	msgData.OfflinePushInfo = &offlinePushInfo
+	msgData.OfflinePushInfo = nil //&offlinePushInfo
 
 	options := make(map[string]bool, 10)
 	for key, value := range pb.MsgData.Options {

@@ -107,16 +107,16 @@ func (ws *WServer) writeMsg(conn *UserConn, a int, msg []byte) error {
 	conn.SetWriteDeadline(time.Now().Add(time.Duration(60) * time.Second))
 	return conn.WriteMessage(a, msg)
 }
-
+//go 协程 调用 1
 func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int32, token string, operationID string) {
 	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), operationID)
-	log.NewInfo(operationID, utils.GetSelfFuncName(), "args  grpcCons: ", userID, platformID, grpcCons)
+	log.NewInfo(operationID, utils.GetSelfFuncName(), "args  grpcCons: ", userID, platformID, len(grpcCons), grpcCons)
 	for _, v := range grpcCons {
 		if v.Target() == rpcSvr.target {
-			log.Debug(operationID, "Filter out this node ", rpcSvr.target)
+			log.NewError(operationID, "Filter out this node ", rpcSvr.target)
 			continue
 		}
-		log.Debug(operationID, "call this node ", v.Target(), rpcSvr.target)
+		log.NewInfo(operationID, "call this node ", v.Target(), rpcSvr.target)
 		client := pbRelay.NewRelayClient(v)
 		req := &pbRelay.MultiTerminalLoginCheckReq{OperationID: operationID, PlatformID: platformID, UserID: userID, Token: token}
 		log.NewInfo(operationID, "MultiTerminalLoginCheckReq ", client, req.String())
@@ -132,7 +132,7 @@ func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int
 		log.NewInfo(operationID, "MultiTerminalLoginCheck resp ", resp.String())
 	}
 }
-//各个rpc服务轮询
+// rpc 调用2
 func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int, token string, operationID string) {
 	rwLock.Lock()
 	defer rwLock.Unlock()
@@ -192,6 +192,7 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 }
 //本地处理
 func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn *UserConn, token string, operationID string) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), " rpc args: ", uid, platformID, token, operationID)
 	switch config.Config.MultiLoginPolicy {
 	case constant.PCAndOther:
 		if constant.PlatformNameToClass(constant.PlatformIDToName(platformID)) == constant.TerminalPC {
@@ -201,7 +202,7 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 	case constant.AllLoginButSameTermKick:
 		if oldConnMap, ok := ws.wsUserToConn[uid]; ok { // user->map[platform->conn]
 			if oldConn, ok := oldConnMap[platformID]; ok {
-				log.NewDebug(operationID, uid, platformID, "kick old conn")
+				log.NewInfo(operationID, uid, platformID, "kick old conn", oldConn.RemoteAddr().String())
 				ws.sendKickMsg(oldConn)
 				m, err := db.DB.GetTokenMapByUidPid(uid, constant.PlatformIDToName(platformID))
 				if err != nil && err != go_redis.Nil {
@@ -212,14 +213,14 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 					log.NewError(operationID, "get token from redis err", "m is nil", uid, constant.PlatformIDToName(platformID))
 					return
 				}
-				log.NewDebug(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
+				log.NewInfo(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
 
 				for k, _ := range m {
 					if k != token {
 						m[k] = constant.KickedToken
 					}
 				}
-				log.NewDebug(operationID, "set token map is ", m, uid, constant.PlatformIDToName(platformID))
+				log.NewInfo(operationID, "set token map is ", m, uid, constant.PlatformIDToName(platformID))
 				err = db.DB.SetTokenMapByUidPid(uid, platformID, m)
 				if err != nil {
 					log.NewError(operationID, "SetTokenMapByUidPid err", err.Error(), uid, platformID, m)
@@ -235,16 +236,16 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 				if err != nil {
 					log.NewError(operationID, "conn close err", err.Error(), uid, platformID)
 				}
-				callbackResp := callbackUserKickOff(operationID, uid, platformID)
-				if callbackResp.ErrCode != 0 {
-					log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOffline failed", callbackResp)
-				}
+				//callbackResp := callbackUserKickOff(operationID, uid, platformID)
+				//if callbackResp.ErrCode != 0 {
+				//	log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserKickOff failed", callbackResp)
+				//}
 			} else {
-				log.Debug(operationID, "normal uid-conn  ", uid, platformID, oldConnMap[platformID])
+				log.NewInfo(operationID, "normal uid-conn  ", uid, platformID, oldConnMap[platformID])
 			}
 
 		} else {
-			log.NewDebug(operationID, "no other conn", ws.wsUserToConn, uid, platformID)
+			log.NewInfo(operationID, "no other conn", ws.wsUserToConn, uid, platformID)
 		}
 
 	case constant.SingleTerminalLogin:
@@ -268,12 +269,13 @@ func (ws *WServer) sendKickMsg(oldConn *UserConn) {
 	if err != nil {
 		log.NewError(mReply.OperationID, mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "sendKickMsg WS WriteMsg error", oldConn.RemoteAddr().String(), err.Error())
 	}
+	log.NewWarn(mReply.OperationID, utils.GetSelfFuncName(), mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "Success", oldConn.RemoteAddr().String())
 }
 
 func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token string, operationID string) {
 	rwLock.Lock()
 	defer rwLock.Unlock()
-	//log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
+	log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
 	callbackResp := callbackUserOnline(operationID, uid, platformID, token)
 	if callbackResp.ErrCode != 0 {
 		log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOnline resp:", callbackResp)
@@ -283,12 +285,12 @@ func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token
 	if oldConnMap, ok := ws.wsUserToConn[uid]; ok {
 		oldConnMap[platformID] = conn
 		ws.wsUserToConn[uid] = oldConnMap
-		log.Debug(operationID, "user not first come in, add conn ", uid, platformID, conn, oldConnMap)
+		log.NewWarn(operationID, "user not first come in, add conn ", uid, platformID, conn, oldConnMap)
 	} else {
 		i := make(map[int]*UserConn)
 		i[platformID] = conn
 		ws.wsUserToConn[uid] = i
-		log.Debug(operationID, "user first come in, new user, conn", uid, platformID, conn, ws.wsUserToConn[uid])
+		log.NewWarn(operationID, "user first come in, new user, conn", uid, platformID, conn, ws.wsUserToConn[uid])
 	}
 	if oldStringMap, ok := ws.wsConnToUser[conn]; ok {
 		oldStringMap[platformID] = uid
@@ -303,7 +305,7 @@ func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token
 		count = count + len(v)
 	}
 	promePkg.PromeGaugeInc(promePkg.OnlineUserGauge)
-	//log.Info(operationID, "WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
+	log.Info(operationID, "WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
 }
 
 func (ws *WServer) delUserConn(conn *UserConn) {
@@ -327,21 +329,21 @@ func (ws *WServer) delUserConn(conn *UserConn) {
 			for _, v := range ws.wsUserToConn {
 				count = count + len(v)
 			}
-			log.Debug(operationID, "WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", uid, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
+			log.Info(operationID, "WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", uid, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
 		} else {
-			log.Debug(operationID, "WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", uid, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn))
+			log.Info(operationID, "WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", uid, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn))
 		}
 		delete(ws.wsConnToUser, conn)
 
 	}
 	err := conn.Close()
 	if err != nil {
-		log.Error(operationID, " close err", "", "uid", uid, "platform", platform)
+		log.Error(operationID, " close err", err.Error(), "uid", uid, "platform", platform)
 	}
-	callbackResp := callbackUserOffline(operationID, uid, platform)
-	if callbackResp.ErrCode != 0 {
-		log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOffline failed", callbackResp)
-	}
+	//callbackResp := callbackUserOffline(operationID, uid, platform)
+	//if callbackResp.ErrCode != 0 {
+	//	log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOffline failed", callbackResp)
+	//}
 	promePkg.PromeGaugeDec(promePkg.OnlineUserGauge)
 }
 

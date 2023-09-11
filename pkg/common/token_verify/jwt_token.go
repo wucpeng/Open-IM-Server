@@ -144,8 +144,8 @@ func GetClaimFromToken(tokensString string) (*Claims, error) {
 		if ve, ok := err.(*jwt.ValidationError); ok {
 			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 				return nil, utils.Wrap(constant.ErrTokenMalformed, "")
-			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
-				return nil, utils.Wrap(constant.ErrTokenExpired, "")
+			//} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
+			//	return nil, utils.Wrap(constant.ErrTokenExpired, "")
 			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
 				return nil, utils.Wrap(constant.ErrTokenNotValidYet, "")
 			} else {

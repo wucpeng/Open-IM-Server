@@ -30,9 +30,9 @@ fi
 
 sleep 1
 cd ${sdk_server_binary_root}
-  nohup ./${sdk_server_name} -sdk_ws_port ${sdk_ws_ports[0]} -openIM_api_port 10002 -openIM_ws_port 10001 -openIM_log_level ${logLevel} >>../logs/openIM.log 2>&1 &
+  nohup ./${sdk_server_name} -sdk_ws_port ${sdk_ws_ports[0]} -openIM_api_port 10002 -openIM_ws_port 10001 -openIM_log_level 4 >>../logs/openIM.log 2>&1 &
   #-openIM_ws_address ${ws_address} -openIM_api_address ${api_address}
-  #-sdk_ws_port 10003 -openIM_api_port 10002 -openIM_ws_port 10001 -openIM_log_level 6
+  #-sdk_ws_port 10003 -openIM_api_port 10002 -openIM_ws_port 10001 -openIM_log_level ${logLevel}
 
 #Check launched service process
 sleep 3

@@ -1,12 +1,12 @@
 package msg
 
 import (
-	"Open_IM/pkg/common/constant"
-	rocksCache "Open_IM/pkg/common/db/rocks_cache"
+	//"Open_IM/pkg/common/constant"
+	//rocksCache "Open_IM/pkg/common/db/rocks_cache"
 	"Open_IM/pkg/utils"
 	"context"
 	go_redis "github.com/go-redis/redis/v8"
-	"time"
+	//"time"
 
 	commonDB "Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
@@ -79,36 +79,36 @@ func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.Pull
 		resp.List = redisMsgList
 	}
 	// TODO 处理客服账号小红点
-	if in.UserID == "111111111111111111111112" && len(resp.List) > 0 {
-		t1 := time.Now()
-		//log.Info(in.OperationID, utils.GetSelfFuncName(), "custom process", len(resp.List))
-		for _, v := range resp.List {
-			isUnread := utils.GetSwitchFromOptions(v.Options, constant.IsUnreadCount)
-			if isUnread {
-				var conId string
-				if v.SessionType == constant.SingleChatType {
-					if in.UserID == v.RecvID {
-						conId = utils.GetConversationIDBySessionType(v.SendID, constant.SingleChatType)
-					} else {
-						conId = utils.GetConversationIDBySessionType(v.RecvID, constant.SingleChatType)
-					}
-				} else if v.SessionType == constant.GroupChatType {
-					conId = utils.GetConversationIDBySessionType(v.GroupID, constant.GroupChatType)
-				}
-				if len(conId) > 0 {
-					conversation, err := rocksCache.GetConversationFromCache(in.UserID, conId)
-					if err == nil {
-						if conversation.UpdateUnreadCountTime > v.SendTime {
-							utils.SetSwitchFromOptions(v.Options, constant.IsUnreadCount, false)
-						}
-					} else {
-						log.Error(in.OperationID, "custom process error", conId, err.Error())
-					}
-				}
-			}
-		}
-		log.NewError(in.OperationID, "custom cost", time.Since(t1))
-	}
+	//if in.UserID == "111111111111111111111112" && len(resp.List) > 0 {
+	//	t1 := time.Now()
+	//	//log.Info(in.OperationID, utils.GetSelfFuncName(), "custom process", len(resp.List))
+	//	for _, v := range resp.List {
+	//		isUnread := utils.GetSwitchFromOptions(v.Options, constant.IsUnreadCount)
+	//		if isUnread {
+	//			var conId string
+	//			if v.SessionType == constant.SingleChatType {
+	//				if in.UserID == v.RecvID {
+	//					conId = utils.GetConversationIDBySessionType(v.SendID, constant.SingleChatType)
+	//				} else {
+	//					conId = utils.GetConversationIDBySessionType(v.RecvID, constant.SingleChatType)
+	//				}
+	//			} else if v.SessionType == constant.GroupChatType {
+	//				conId = utils.GetConversationIDBySessionType(v.GroupID, constant.GroupChatType)
+	//			}
+	//			if len(conId) > 0 {
+	//				conversation, err := rocksCache.GetConversationFromCache(in.UserID, conId)
+	//				if err == nil {
+	//					if conversation.UpdateUnreadCountTime > v.SendTime {
+	//						utils.SetSwitchFromOptions(v.Options, constant.IsUnreadCount, false)
+	//					}
+	//				} else {
+	//					log.Error(in.OperationID, "custom process error", conId, err.Error())
+	//				}
+	//			}
+	//		}
+	//	}
+	//	log.NewError(in.OperationID, "custom cost", time.Since(t1))
+	//}
 	return resp, nil
 }
 

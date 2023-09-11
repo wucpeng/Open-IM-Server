@@ -51,7 +51,7 @@ func (ms *PushConsumerHandler) handleMs2PsChat(msg []byte) {
 	}
 	switch msgFromMQ.MsgData.SessionType {
 	case constant.SuperGroupChatType:
-		MsgToSuperGroupUser(pbData)
+		//MsgToSuperGroupUser(pbData)
 	default:
 		MsgToUser(pbData)
 	}

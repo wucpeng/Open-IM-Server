@@ -97,7 +97,7 @@ func (ws *WServer) getSeqReq(conn *UserConn, m *Req) {
 			log.Error(rpcReq.OperationID, "rpc call failed to GetMaxAndMinSeq ", nReply.String())
 			ws.getSeqResp(conn, m, nReply)
 		} else {
-			//log.NewInfo(rpcReq.OperationID, "rpc call success to getSeqReq", rpcReply.String())
+			log.NewInfo(rpcReq.OperationID, "rpc call success to getSeqReq", rpcReply.String())
 			ws.getSeqResp(conn, m, rpcReply)
 		}
 	} else {
