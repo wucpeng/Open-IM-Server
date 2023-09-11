@@ -273,6 +273,11 @@ func (ws *WServer) sendKickMsg(oldConn *UserConn) {
 }
 
 func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token string, operationID string) {
+	if platformID == 9 {
+		platformID = 1
+	} else if platformID == 8 {
+		platformID = 2
+	}
 	rwLock.Lock()
 	defer rwLock.Unlock()
 	log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
@@ -374,7 +379,7 @@ func (ws *WServer) headerCheck(w http.ResponseWriter, r *http.Request, operation
 	status := http.StatusUnauthorized
 	query := r.URL.Query()
 	if len(query["token"]) != 0 && len(query["sendID"]) != 0 && len(query["platformID"]) != 0 {
-		if ok, err, msg := token_verify.WsVerifyToken(query["token"][0], query["sendID"][0], query["platformID"][0], operationID); !ok {
+		if ok, err, msg := token_verify.WsVerifyToken(query["token"][0], query["sendID"][0], utils.StringToInt(query["platformID"][0]), operationID); !ok {
 			if errors.Is(err, constant.ErrTokenExpired) {
 				status = int(constant.ErrTokenExpired.ErrCode)
 			}

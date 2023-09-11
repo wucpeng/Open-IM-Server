@@ -118,6 +118,11 @@ func UserToken(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 401, "errMsg": errMsg})
 		return
 	}
+	if params.Platform == 9 {
+		params.Platform = 1
+	} else if params.Platform == 8 {
+		params.Platform = 2
+	}
 	req := &rpc.UserTokenReq{Platform: params.Platform, FromUserID: params.UserID, OperationID: params.OperationID, LoginIp: params.LoginIp}
 	//log.NewInfo(req.OperationID, "UserToken args ", req.String())
 	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImAuthName, req.OperationID)

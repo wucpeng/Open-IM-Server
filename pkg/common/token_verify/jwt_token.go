@@ -292,8 +292,13 @@ func VerifyToken(token, uid string) (bool, error) {
 	return true, nil
 }
 
-func WsVerifyToken(token, uid string, platformID string, operationID string) (bool, error, string) {
-	argMsg := "args: token: " + token + " operationID: " + operationID + " userID: " + uid + " platformID: " + constant.PlatformIDToName(utils.StringToInt(platformID))
+func WsVerifyToken(token, uid string, platformID int, operationID string) (bool, error, string) {
+	if platformID == 9 {
+		platformID = 1
+	} else if platformID == 8 {
+		platformID = 2
+	}
+	argMsg := "args: token: " + token + " operationID: " + operationID + " userID: " + uid + " platformID: " + constant.PlatformIDToName(platformID)
 	claims, err := ParseToken(token, operationID)
 	if err != nil {
 		//if errors.Is(err, constant.ErrTokenUnknown) {
@@ -314,7 +319,7 @@ func WsVerifyToken(token, uid string, platformID string, operationID string) (bo
 		errMsg := " uid is not same to token uid " + argMsg + " claims.UID: " + claims.UID
 		return false, utils.Wrap(constant.ErrTokenDifferentUserID, errMsg), errMsg
 	}
-	if claims.Platform != constant.PlatformIDToName(utils.StringToInt(platformID)) {
+	if claims.Platform != constant.PlatformIDToName(platformID)  {
 		errMsg := " platform is not same to token platform " + argMsg + " claims platformID: " + claims.Platform
 		return false, utils.Wrap(constant.ErrTokenDifferentPlatformID, errMsg), errMsg
 	}
