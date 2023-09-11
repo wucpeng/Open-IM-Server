@@ -140,12 +140,21 @@ func GetTokensByUserIdPlat(userID string, platformID int) (string, int64, error)
 
 func GetClaimFromToken(tokensString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokensString, &Claims{}, secret())
+
 	if err != nil {
 		if ve, ok := err.(*jwt.ValidationError); ok {
 			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 				return nil, utils.Wrap(constant.ErrTokenMalformed, "")
-			//} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
-			//	return nil, utils.Wrap(constant.ErrTokenExpired, "")
+			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				//log.NewInfo("xxxxxx", token.Valid)
+				if claims, ok := token.Claims.(*Claims); ok {
+					log.NewInfo("xxxxxx", claims.UID, claims.Platform)
+					return claims, nil
+				}
+				return nil, utils.Wrap(constant.ErrTokenExpired, "")
+				//if claims, ok := token.Claims.(*Claims); ok {
+				//	return claims, nil
+				//}
 			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
 				return nil, utils.Wrap(constant.ErrTokenNotValidYet, "")
 			} else {
@@ -209,7 +218,7 @@ func GetUserIDFromTokenExpireTime(token string, operationID string) (bool, strin
 	}
 	return true, claims.UID, "", claims.ExpiresAt.Unix()
 }
-
+//organization use
 func ParseTokenGetUserID(token string, operationID string) (error, string) {
 	claims, err := ParseToken(token, operationID)
 	if err != nil {
