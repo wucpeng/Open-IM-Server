@@ -1699,6 +1699,53 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 	return nil, nil
 }
 
+//6
+func (d *DataBases) CheckUserSeq(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetLimit(1).SetSort(bson.M{"uid": -1})
+	var userChats []UserChat
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
+
+	var msgMaxSeq uint32 = 0
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		for i := 0; i < len(userChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if msgMaxSeq < msg.Seq {
+				msgMaxSeq = msg.Seq
+			}
+		}
+	}
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, maxSeq, msgMaxSeq)
+	if err == redis.Nil {
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "redis nil",  maxSeq, msgMaxSeq)
+	} else if err != nil {
+		log.NewError(operationID, utils.GetSelfFuncName(), "redis err", maxSeq, msgMaxSeq, err.Error())
+	} else {
+		if maxSeq < uint64(msgMaxSeq) {
+			log.NewError(operationID, utils.GetSelfFuncName(), "redis seq no match", uid, maxSeq, msgMaxSeq)
+		}
+	}
+
+	return nil, nil
+}
+
+
 // deleted by wg 2022-12-12
 //func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
 //	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)

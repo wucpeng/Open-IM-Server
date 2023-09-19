@@ -70,9 +70,9 @@ func MinioInit() {
 	err = MinioClient.MakeBucket(context.Background(), config.Config.Credential.Minio.AppBucket, opt)
 	if err != nil {
 		log.NewInfo(operationID, utils.GetSelfFuncName(), "MakeBucket failed ", err.Error())
-		exists, err := MinioClient.BucketExists(context.Background(), config.Config.Credential.Minio.Bucket)
+		exists, err := MinioClient.BucketExists(context.Background(), config.Config.Credential.Minio.AppBucket)
 		if err == nil && exists {
-			log.NewInfo(operationID, utils.GetSelfFuncName(), "We already own ", config.Config.Credential.Minio.Bucket)
+			log.NewInfo(operationID, utils.GetSelfFuncName(), "We already own ", config.Config.Credential.Minio.AppBucket)
 		} else {
 			if err != nil {
 				log.NewInfo(operationID, utils.GetSelfFuncName(), err.Error())

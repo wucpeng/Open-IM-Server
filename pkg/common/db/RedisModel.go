@@ -68,6 +68,7 @@ func (d *DataBases) GetAccountCode(account string) (string, error) {
 //Get the largest Seq
 func (d *DataBases) GetUserMaxSeq(uid string) (uint64, error) {
 	key := userIncrSeq + uid
+	log2.Info("xxxxx", utils.GetSelfFuncName(), key)
 	seq, err := d.RDB.Get(context.Background(), key).Result()
 	return uint64(utils.StringToInt(seq)), err
 }

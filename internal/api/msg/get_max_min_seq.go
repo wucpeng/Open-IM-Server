@@ -577,6 +577,13 @@ func CheckUserMongoMsg(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
 			return
 		}
+	} else if params.Type == 6 {
+		_, err := commonDB.DB.CheckUserSeq(params.UserID, params.OperationID)
+		if err != nil {
+			log.NewError(params.OperationID, utils.GetSelfFuncName(), "CheckUserSeq failed", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
