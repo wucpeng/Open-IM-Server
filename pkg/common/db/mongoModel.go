@@ -4,7 +4,6 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
-	//promePkg "Open_IM/pkg/common/prometheus"
 	pbMsg "Open_IM/pkg/proto/msg"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -13,27 +12,16 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/protobuf/sortkeys"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"math/rand"
-	"sync"
-
-	//"github.com/garyburd/redigo/redis"
 	"github.com/golang/protobuf/proto"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"strconv"
+	"sync"
 	"time"
 )
 
 const cChat = "msg"
-const cGroup = "group"
-const cTag = "tag"
-const cSendLog = "send_log"
-const cWorkMoment = "work_moment"
-const cCommentMsg = "comment_msg"
-const cSuperGroup = "super_group"
-const cUserToSuperGroup = "user_to_super_group"
 const singleGocMsgNum = 5000
 
 func GetSingleGocMsgNum() int {
@@ -79,9 +67,7 @@ func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID
 		}
 		return t
 	}(userID, seqList)
-
 	//log.Info(operationID, "DelMsgBySeqList:", suffixUserID2SubSeqList)
-
 	lock := sync.Mutex{}
 	var wg sync.WaitGroup
 	wg.Add(len(suffixUserID2SubSeqList))
@@ -382,7 +368,6 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 		return nil, utils.Wrap(err, "")
 	}
 	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
@@ -392,7 +377,6 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
 			continue
 		}
-
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
@@ -412,9 +396,8 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 			if endTime != 0 && msg.SendTime > endTime {
 				break
 			}
-			//log.NewDebug(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
 			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
-			   // || (msg.ContentType > 1500 && msg.ContentType < 1600) {
+				// || (msg.ContentType > 1500 && msg.ContentType < 1600) {
 				//log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
 				seqMsg = append(seqMsg, msg)
 			}
@@ -423,7 +406,6 @@ func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
 	return seqMsg, nil
 }
-
 
 func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
@@ -445,7 +427,6 @@ func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int
 			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
 			continue
 		}
-
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
@@ -477,7 +458,6 @@ func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int
 	return seqMsg, nil
 }
 
-
 func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	var hasSeqList []uint32
 	singleCount := 0
@@ -497,7 +477,7 @@ func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uin
 		}
 		return t
 	}(groupID, seqList)
-	log.NewInfo(operationID, "GetSuperGroupMsgBySeqListMongo", groupID, seqList, m)
+	//log.NewInfo(operationID, "GetSuperGroupMsgBySeqListMongo", groupID, seqList, m)
 	sChat := UserChat{}
 	for seqUid, value := range m {
 		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
@@ -587,20 +567,20 @@ func genExceptionSuperGroupMessageBySeqList(seqList []uint32, groupID string) (e
 
 func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
 	var seqUid string
-	newTime := getCurrentTimestampByMill()
+	//newTime := getCurrentTimestampByMill()
 	session := d.mgoSession.Clone()
 	if session == nil {
 		return errors.New("session == nil")
 	}
 	defer session.Close()
-	log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
+	//log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
 	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
 	seqUid = getSeqUid(uid, m.MsgData.Seq)
 	n, err := c.Find(bson.M{"uid": seqUid}).Count()
 	if err != nil {
 		return err
 	}
-	log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
+	//log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 	sMsg := MsgInfo{}
 	sMsg.SendTime = sendTime
 	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
@@ -620,8 +600,109 @@ func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToD
 			return err
 		}
 	}
-	log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
+	//log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
 	return nil
+}
+
+func (d *DataBases) DelUserChatMongo2(uid string) error {
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	filter := bson.M{"uid": uid}
+
+	delTime := time.Now().Unix() - int64(config.Config.Mongo.DBRetainChatRecords)*24*3600
+	if _, err := c.UpdateOne(ctx, filter, bson.M{"$pull": bson.M{"msg": bson.M{"sendtime": bson.M{"$lte": delTime}}}}); err != nil {
+		return utils.Wrap(err, "")
+	}
+	return nil
+}
+
+func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) error {
+	ctx := context.Background()
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	maxSeq, err := d.GetUserMaxSeq(userID)
+	if err == redis.Nil {
+		return nil
+	}
+	if err != nil {
+		return utils.Wrap(err, "")
+	}
+
+	seqUsers := getSeqUserIDList(userID, uint32(maxSeq))
+	//log.NewInfo(operationID, "getSeqUserIDList", seqUsers)
+	_, err = c.DeleteMany(ctx, bson.M{"uid": bson.M{"$in": seqUsers}})
+	if err == mongo.ErrNoDocuments {
+		return nil
+	}
+	return utils.Wrap(err, "")
+}
+
+// const cTag = "tag"
+// const cSendLog = "send_log"
+// const cWorkMoment = "work_moment"
+// const cSuperGroup = "super_group"
+// const cUserToSuperGroup = "user_to_super_group"
+const cGroup = "group"
+const cCommentMsg = "comment_msg"
+
+func getCurrentTimestampByMill() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
+func getSeqUid(uid string, seq uint32) string {
+	seqSuffix := seq / singleGocMsgNum
+	return indexGen(uid, seqSuffix)
+}
+
+func GetSeqUid(uid string, seq uint32) string {
+	return getSeqUid(uid, seq)
+}
+
+func getSeqUserIDList(userID string, maxSeq uint32) []string {
+	seqMaxSuffix := maxSeq / singleGocMsgNum
+	var seqUserIDList []string
+	for i := 0; i <= int(seqMaxSuffix); i++ {
+		seqUserID := indexGen(userID, uint32(i))
+		seqUserIDList = append(seqUserIDList, seqUserID)
+	}
+	return seqUserIDList
+}
+
+func getSeqSuperGroupID(groupID string, seq uint32) string {
+	seqSuffix := seq / singleGocMsgNum
+	return superGroupIndexGen(groupID, seqSuffix)
+}
+
+func getMsgIndex(seq uint32) int {
+	seqSuffix := seq / singleGocMsgNum
+	var index uint32
+	if seqSuffix == 0 {
+		index = (seq - seqSuffix*singleGocMsgNum) - 1
+	} else {
+		index = seq - seqSuffix*singleGocMsgNum
+	}
+	return int(index)
+}
+
+func isContainInt32(target uint32, List []uint32) bool {
+	for _, element := range List {
+		if target == element {
+			return true
+		}
+	}
+	return false
+}
+
+func indexGen(uid string, seqSuffix uint32) string {
+	return uid + ":" + strconv.FormatInt(int64(seqSuffix), 10)
+}
+
+func isNotContainInt32(target uint32, List []uint32) bool {
+	for _, i := range List {
+		if i == target {
+			return false
+		}
+	}
+	return true
 }
 
 func (d *DataBases) DelUserChat(uid string) error {
@@ -642,17 +723,6 @@ func (d *DataBases) DelUserChat(uid string) error {
 	//return nil
 }
 
-func (d *DataBases) DelUserChatMongo2(uid string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	filter := bson.M{"uid": uid}
-
-	delTime := time.Now().Unix() - int64(config.Config.Mongo.DBRetainChatRecords)*24*3600
-	if _, err := c.UpdateOne(ctx, filter, bson.M{"$pull": bson.M{"msg": bson.M{"sendtime": bson.M{"$lte": delTime}}}}); err != nil {
-		return utils.Wrap(err, "")
-	}
-	return nil
-}
 //
 //func (d *DataBases) MgoUserCount() (int, error) {
 //	return 0, nil
@@ -753,999 +823,6 @@ func (d *DataBases) DelGroupMember(groupID, uid string) error {
 	//return nil
 }
 
-type Tag struct {
-	UserID   string   `bson:"user_id"`
-	TagID    string   `bson:"tag_id"`
-	TagName  string   `bson:"tag_name"`
-	UserList []string `bson:"user_list"`
-}
-
-func (d *DataBases) GetUserTags(userID string) ([]Tag, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	var tags []Tag
-	cursor, err := c.Find(ctx, bson.M{"user_id": userID})
-	if err != nil {
-		return tags, err
-	}
-	if err = cursor.All(ctx, &tags); err != nil {
-		return tags, err
-	}
-	return tags, nil
-}
-
-func (d *DataBases) CreateTag(userID, tagName string, userList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	tagID := generateTagID(tagName, userID)
-	tag := Tag{
-		UserID:   userID,
-		TagID:    tagID,
-		TagName:  tagName,
-		UserList: userList,
-	}
-	_, err := c.InsertOne(ctx, tag)
-	return err
-}
-
-func (d *DataBases) GetTagByID(userID, tagID string) (Tag, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	var tag Tag
-	err := c.FindOne(ctx, bson.M{"user_id": userID, "tag_id": tagID}).Decode(&tag)
-	return tag, err
-}
-
-func (d *DataBases) DeleteTag(userID, tagID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	_, err := c.DeleteOne(ctx, bson.M{"user_id": userID, "tag_id": tagID})
-	return err
-}
-
-func (d *DataBases) SetTag(userID, tagID, newName string, increaseUserIDList []string, reduceUserIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	var tag Tag
-	if err := c.FindOne(ctx, bson.M{"tag_id": tagID, "user_id": userID}).Decode(&tag); err != nil {
-		return err
-	}
-	if newName != "" {
-		_, err := c.UpdateOne(ctx, bson.M{"user_id": userID, "tag_id": tagID}, bson.M{"$set": bson.M{"tag_name": newName}})
-		if err != nil {
-			return err
-		}
-	}
-	tag.UserList = append(tag.UserList, increaseUserIDList...)
-	tag.UserList = utils.RemoveRepeatedStringInList(tag.UserList)
-	for _, v := range reduceUserIDList {
-		for i2, v2 := range tag.UserList {
-			if v == v2 {
-				tag.UserList[i2] = ""
-			}
-		}
-	}
-	var newUserList []string
-	for _, v := range tag.UserList {
-		if v != "" {
-			newUserList = append(newUserList, v)
-		}
-	}
-	_, err := c.UpdateOne(ctx, bson.M{"user_id": userID, "tag_id": tagID}, bson.M{"$set": bson.M{"user_list": newUserList}})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DataBases) GetUserIDListByTagID(userID, tagID string) ([]string, error) {
-	var tag Tag
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cTag)
-	_ = c.FindOne(ctx, bson.M{"user_id": userID, "tag_id": tagID}).Decode(&tag)
-	return tag.UserList, nil
-}
-
-type TagUser struct {
-	UserID   string `bson:"user_id"`
-	UserName string `bson:"user_name"`
-}
-
-type TagSendLog struct {
-	UserList         []TagUser `bson:"tag_list"`
-	SendID           string    `bson:"send_id"`
-	SenderPlatformID int32     `bson:"sender_platform_id"`
-	Content          string    `bson:"content"`
-	SendTime         int64     `bson:"send_time"`
-}
-
-func (d *DataBases) SaveTagSendLog(tagSendLog *TagSendLog) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSendLog)
-	_, err := c.InsertOne(ctx, tagSendLog)
-	return err
-}
-
-func (d *DataBases) GetTagSendLogs(userID string, showNumber, pageNumber int32) ([]TagSendLog, error) {
-	var tagSendLogs []TagSendLog
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSendLog)
-	findOpts := options.Find().SetLimit(int64(showNumber)).SetSkip(int64(showNumber) * (int64(pageNumber) - 1)).SetSort(bson.M{"send_time": -1})
-	cursor, err := c.Find(ctx, bson.M{"send_id": userID}, findOpts)
-	if err != nil {
-		return tagSendLogs, err
-	}
-	err = cursor.All(ctx, &tagSendLogs)
-	if err != nil {
-		return tagSendLogs, err
-	}
-	return tagSendLogs, nil
-}
-
-type WorkMoment struct {
-	WorkMomentID         string            `bson:"work_moment_id"`
-	UserID               string            `bson:"user_id"`
-	UserName             string            `bson:"user_name"`
-	FaceURL              string            `bson:"face_url"`
-	Content              string            `bson:"content"`
-	LikeUserList         []*WorkMomentUser `bson:"like_user_list"`
-	AtUserList           []*WorkMomentUser `bson:"at_user_list"`
-	PermissionUserList   []*WorkMomentUser `bson:"permission_user_list"`
-	Comments             []*Comment        `bson:"comments"`
-	PermissionUserIDList []string          `bson:"permission_user_id_list"`
-	Permission           int32             `bson:"permission"`
-	CreateTime           int32             `bson:"create_time"`
-}
-
-type WorkMomentUser struct {
-	UserID   string `bson:"user_id"`
-	UserName string `bson:"user_name"`
-}
-
-type Comment struct {
-	UserID        string `bson:"user_id" json:"user_id"`
-	UserName      string `bson:"user_name" json:"user_name"`
-	ReplyUserID   string `bson:"reply_user_id" json:"reply_user_id"`
-	ReplyUserName string `bson:"reply_user_name" json:"reply_user_name"`
-	ContentID     string `bson:"content_id" json:"content_id"`
-	Content       string `bson:"content" json:"content"`
-	CreateTime    int32  `bson:"create_time" json:"create_time"`
-}
-
-func (d *DataBases) CreateOneWorkMoment(workMoment *WorkMoment) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	workMomentID := generateWorkMomentID(workMoment.UserID)
-	workMoment.WorkMomentID = workMomentID
-	workMoment.CreateTime = int32(time.Now().Unix())
-	_, err := c.InsertOne(ctx, workMoment)
-	return err
-}
-
-func (d *DataBases) DeleteOneWorkMoment(workMomentID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	_, err := c.DeleteOne(ctx, bson.M{"work_moment_id": workMomentID})
-	return err
-}
-
-func (d *DataBases) DeleteComment(workMomentID, contentID, opUserID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	_, err := c.UpdateOne(ctx, bson.D{{"work_moment_id", workMomentID},
-		{"$or", bson.A{
-			bson.D{{"user_id", opUserID}},
-			bson.D{{"comments", bson.M{"$elemMatch": bson.M{"user_id": opUserID}}}},
-		},
-		}}, bson.M{"$pull": bson.M{"comments": bson.M{"content_id": contentID}}})
-	return err
-}
-
-func (d *DataBases) GetWorkMomentByID(workMomentID string) (*WorkMoment, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	workMoment := &WorkMoment{}
-	err := c.FindOne(ctx, bson.M{"work_moment_id": workMomentID}).Decode(workMoment)
-	return workMoment, err
-}
-
-func (d *DataBases) LikeOneWorkMoment(likeUserID, userName, workMomentID string) (*WorkMoment, bool, error) {
-	workMoment, err := d.GetWorkMomentByID(workMomentID)
-	if err != nil {
-		return nil, false, err
-	}
-	var isAlreadyLike bool
-	for i, user := range workMoment.LikeUserList {
-		if likeUserID == user.UserID {
-			isAlreadyLike = true
-			workMoment.LikeUserList = append(workMoment.LikeUserList[0:i], workMoment.LikeUserList[i+1:]...)
-		}
-	}
-	if !isAlreadyLike {
-		workMoment.LikeUserList = append(workMoment.LikeUserList, &WorkMomentUser{UserID: likeUserID, UserName: userName})
-	}
-	log.NewDebug("", utils.GetSelfFuncName(), workMoment)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	_, err = c.UpdateOne(ctx, bson.M{"work_moment_id": workMomentID}, bson.M{"$set": bson.M{"like_user_list": workMoment.LikeUserList}})
-	return workMoment, !isAlreadyLike, err
-}
-
-func (d *DataBases) SetUserWorkMomentsLevel(userID string, level int32) error {
-	return nil
-}
-
-func (d *DataBases) CommentOneWorkMoment(comment *Comment, workMomentID string) (WorkMoment, error) {
-	comment.ContentID = generateWorkMomentCommentID(workMomentID)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	var workMoment WorkMoment
-	err := c.FindOneAndUpdate(ctx, bson.M{"work_moment_id": workMomentID}, bson.M{"$push": bson.M{"comments": comment}}).Decode(&workMoment)
-	return workMoment, err
-}
-
-func (d *DataBases) GetUserSelfWorkMoments(userID string, showNumber, pageNumber int32) ([]WorkMoment, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	var workMomentList []WorkMoment
-	findOpts := options.Find().SetLimit(int64(showNumber)).SetSkip(int64(showNumber) * (int64(pageNumber) - 1)).SetSort(bson.M{"create_time": -1})
-	result, err := c.Find(ctx, bson.M{"user_id": userID}, findOpts)
-	if err != nil {
-		return workMomentList, nil
-	}
-	err = result.All(ctx, &workMomentList)
-	return workMomentList, err
-}
-
-func (d *DataBases) GetUserWorkMoments(opUserID, userID string, showNumber, pageNumber int32, friendIDList []string) ([]WorkMoment, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	var workMomentList []WorkMoment
-	findOpts := options.Find().SetLimit(int64(showNumber)).SetSkip(int64(showNumber) * (int64(pageNumber) - 1)).SetSort(bson.M{"create_time": -1})
-	result, err := c.Find(ctx, bson.D{ // 等价条件: select * from
-		{"user_id", userID},
-		{"$or", bson.A{
-			bson.D{{"permission", constant.WorkMomentPermissionCantSee}, {"permission_user_id_list", bson.D{{"$nin", bson.A{opUserID}}}}},
-			bson.D{{"permission", constant.WorkMomentPermissionCanSee}, {"permission_user_id_list", bson.D{{"$in", bson.A{opUserID}}}}},
-			bson.D{{"permission", constant.WorkMomentPublic}},
-		}},
-	}, findOpts)
-	if err != nil {
-		return workMomentList, nil
-	}
-	err = result.All(ctx, &workMomentList)
-	return workMomentList, err
-}
-
-func (d *DataBases) GetUserFriendWorkMoments(showNumber, pageNumber int32, userID string, friendIDList []string) ([]WorkMoment, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
-	var workMomentList []WorkMoment
-	findOpts := options.Find().SetLimit(int64(showNumber)).SetSkip(int64(showNumber) * (int64(pageNumber) - 1)).SetSort(bson.M{"create_time": -1})
-	var filter bson.D
-	permissionFilter := bson.D{
-		{"$or", bson.A{
-			bson.D{{"permission", constant.WorkMomentPermissionCantSee}, {"permission_user_id_list", bson.D{{"$nin", bson.A{userID}}}}},
-			bson.D{{"permission", constant.WorkMomentPermissionCanSee}, {"permission_user_id_list", bson.D{{"$in", bson.A{userID}}}}},
-			bson.D{{"permission", constant.WorkMomentPublic}},
-		}}}
-	if config.Config.WorkMoment.OnlyFriendCanSee {
-		filter = bson.D{
-			{"$or", bson.A{
-				bson.D{{"user_id", userID}}, //self
-				bson.D{{"$and", bson.A{permissionFilter, bson.D{{"user_id", bson.D{{"$in", friendIDList}}}}}}},
-			},
-			},
-		}
-	} else {
-		filter = bson.D{
-			{"$or", bson.A{
-				bson.D{{"user_id", userID}}, //self
-				permissionFilter,
-			},
-			},
-		}
-	}
-	result, err := c.Find(ctx, filter, findOpts)
-	if err != nil {
-		return workMomentList, err
-	}
-	err = result.All(ctx, &workMomentList)
-	return workMomentList, err
-}
-
-type SuperGroup struct {
-	GroupID string `bson:"group_id" json:"groupID"`
-	//MemberNumCount int      `bson:"member_num_count"`
-	MemberIDList []string `bson:"member_id_list" json:"memberIDList"`
-}
-
-type UserToSuperGroup struct {
-	UserID      string   `bson:"user_id" json:"userID"`
-	GroupIDList []string `bson:"group_id_list" json:"groupIDList"`
-}
-
-func (d *DataBases) CreateSuperGroup(groupID string, initMemberIDList []string, memberNumCount int) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
-	session, err := d.mongoClient.StartSession()
-	if err != nil {
-		return utils.Wrap(err, "start session failed")
-	}
-	defer session.EndSession(ctx)
-	sCtx := mongo.NewSessionContext(ctx, session)
-	superGroup := SuperGroup{
-		GroupID:      groupID,
-		MemberIDList: initMemberIDList,
-	}
-	_, err = c.InsertOne(sCtx, superGroup)
-	if err != nil {
-		_ = session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	var users []UserToSuperGroup
-	for _, v := range initMemberIDList {
-		users = append(users, UserToSuperGroup{
-			UserID: v,
-		})
-	}
-	upsert := true
-	opts := &options.UpdateOptions{
-		Upsert: &upsert,
-	}
-	c = d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
-	//_, err = c.UpdateMany(sCtx, bson.M{"user_id": bson.M{"$in": initMemberIDList}}, bson.M{"$addToSet": bson.M{"group_id_list": groupID}}, opts)
-	//if err != nil {
-	//	session.AbortTransaction(ctx)
-	//	return utils.Wrap(err, "transaction failed")
-	//}
-	for _, userID := range initMemberIDList {
-		_, err = c.UpdateOne(sCtx, bson.M{"user_id": userID}, bson.M{"$addToSet": bson.M{"group_id_list": groupID}}, opts)
-		if err != nil {
-			_ = session.AbortTransaction(ctx)
-			return utils.Wrap(err, "transaction failed")
-		}
-
-	}
-	return err
-}
-
-func (d *DataBases) GetSuperGroup(groupID string) (SuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
-	superGroup := SuperGroup{}
-	err := c.FindOne(ctx, bson.M{"group_id": groupID}).Decode(&superGroup)
-	return superGroup, err
-}
-
-func (d *DataBases) AddUserToSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
-	session, err := d.mongoClient.StartSession()
-	if err != nil {
-		return utils.Wrap(err, "start session failed")
-	}
-	defer session.EndSession(ctx)
-	sCtx := mongo.NewSessionContext(ctx, session)
-	if err != nil {
-		return utils.Wrap(err, "start transaction failed")
-	}
-	_, err = c.UpdateOne(sCtx, bson.M{"group_id": groupID}, bson.M{"$addToSet": bson.M{"member_id_list": bson.M{"$each": userIDList}}})
-	if err != nil {
-		_ = session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	c = d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
-	var users []UserToSuperGroup
-	for _, v := range userIDList {
-		users = append(users, UserToSuperGroup{
-			UserID: v,
-		})
-	}
-	upsert := true
-	opts := &options.UpdateOptions{
-		Upsert: &upsert,
-	}
-	for _, userID := range userIDList {
-		_, err = c.UpdateOne(sCtx, bson.M{"user_id": userID}, bson.M{"$addToSet": bson.M{"group_id_list": groupID}}, opts)
-		if err != nil {
-			_ = session.AbortTransaction(ctx)
-			return utils.Wrap(err, "transaction failed")
-		}
-	}
-	_ = session.CommitTransaction(ctx)
-	return err
-}
-
-func (d *DataBases) RemoverUserFromSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
-	session, err := d.mongoClient.StartSession()
-	if err != nil {
-		return utils.Wrap(err, "start session failed")
-	}
-	defer session.EndSession(ctx)
-	sCtx := mongo.NewSessionContext(ctx, session)
-	_, err = c.UpdateOne(ctx, bson.M{"group_id": groupID}, bson.M{"$pull": bson.M{"member_id_list": bson.M{"$in": userIDList}}})
-	if err != nil {
-		_ = session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	err = d.RemoveGroupFromUser(ctx, sCtx, groupID, userIDList)
-	if err != nil {
-		_ = session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	_ = session.CommitTransaction(ctx)
-	return err
-}
-
-func (d *DataBases) GetSuperGroupByUserID(userID string) (UserToSuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
-	var user UserToSuperGroup
-	_ = c.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
-	return user, nil
-}
-
-func (d *DataBases) DeleteSuperGroup(groupID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
-	session, err := d.mongoClient.StartSession()
-	if err != nil {
-		return utils.Wrap(err, "start session failed")
-	}
-	defer session.EndSession(ctx)
-	sCtx := mongo.NewSessionContext(ctx, session)
-	superGroup := &SuperGroup{}
-	result := c.FindOneAndDelete(sCtx, bson.M{"group_id": groupID})
-	err = result.Decode(superGroup)
-	if err != nil {
-		session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	if err = d.RemoveGroupFromUser(ctx, sCtx, groupID, superGroup.MemberIDList); err != nil {
-		session.AbortTransaction(ctx)
-		return utils.Wrap(err, "transaction failed")
-	}
-	session.CommitTransaction(ctx)
-	return nil
-}
-
-func (d *DataBases) RemoveGroupFromUser(ctx, sCtx context.Context, groupID string, userIDList []string) error {
-	var users []UserToSuperGroup
-	for _, v := range userIDList {
-		users = append(users, UserToSuperGroup{
-			UserID: v,
-		})
-	}
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
-	_, err := c.UpdateOne(sCtx, bson.M{"user_id": bson.M{"$in": userIDList}}, bson.M{"$pull": bson.M{"group_id_list": groupID}})
-	if err != nil {
-		return utils.Wrap(err, "UpdateOne transaction failed")
-	}
-	return err
-}
-
-func generateTagID(tagName, userID string) string {
-	return utils.Md5(tagName + userID + strconv.Itoa(rand.Int()) + time.Now().String())
-}
-
-func generateWorkMomentID(userID string) string {
-	return utils.Md5(userID + strconv.Itoa(rand.Int()) + time.Now().String())
-}
-
-func generateWorkMomentCommentID(workMomentID string) string {
-	return utils.Md5(workMomentID + strconv.Itoa(rand.Int()) + time.Now().String())
-}
-
-func getCurrentTimestampByMill() int64 {
-	return time.Now().UnixNano() / 1e6
-}
-func GetCurrentTimestampByMill() int64 {
-	return time.Now().UnixNano() / 1e6
-}
-
-func getSeqUid(uid string, seq uint32) string {
-	seqSuffix := seq / singleGocMsgNum
-	return indexGen(uid, seqSuffix)
-}
-
-func getSeqUserIDList(userID string, maxSeq uint32) []string {
-	seqMaxSuffix := maxSeq / singleGocMsgNum
-	var seqUserIDList []string
-	for i := 0; i <= int(seqMaxSuffix); i++ {
-		seqUserID := indexGen(userID, uint32(i))
-		seqUserIDList = append(seqUserIDList, seqUserID)
-	}
-	return seqUserIDList
-}
-
-func getSeqSuperGroupID(groupID string, seq uint32) string {
-	seqSuffix := seq / singleGocMsgNum
-	return superGroupIndexGen(groupID, seqSuffix)
-}
-
-func GetSeqUid(uid string, seq uint32) string {
-	return getSeqUid(uid, seq)
-}
-
-func getMsgIndex(seq uint32) int {
-	seqSuffix := seq / singleGocMsgNum
-	var index uint32
-	if seqSuffix == 0 {
-		index = (seq - seqSuffix*singleGocMsgNum) - 1
-	} else {
-		index = seq - seqSuffix*singleGocMsgNum
-	}
-	return int(index)
-}
-
-func isContainInt32(target uint32, List []uint32) bool {
-	for _, element := range List {
-		if target == element {
-			return true
-		}
-	}
-	return false
-}
-
-func isNotContainInt32(target uint32, List []uint32) bool {
-	for _, i := range List {
-		if i == target {
-			return false
-		}
-	}
-	return true
-}
-
-func indexGen(uid string, seqSuffix uint32) string {
-	return uid + ":" + strconv.FormatInt(int64(seqSuffix), 10)
-}
-
-func superGroupIndexGen(groupID string, seqSuffix uint32) string {
-	return "super_group_" + groupID + ":" + strconv.FormatInt(int64(seqSuffix), 10)
-}
-
-func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) error {
-	ctx := context.Background()
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	maxSeq, err := d.GetUserMaxSeq(userID)
-	if err == redis.Nil {
-		return nil
-	}
-	if err != nil {
-		return utils.Wrap(err, "")
-	}
-
-	seqUsers := getSeqUserIDList(userID, uint32(maxSeq))
-	log.NewInfo(operationID, "getSeqUserIDList", seqUsers)
-	_, err = c.DeleteMany(ctx, bson.M{"uid": bson.M{"$in": seqUsers}})
-	if err == mongo.ErrNoDocuments {
-		return nil
-	}
-	return utils.Wrap(err, "")
-}
-
-
-//1
-func (d *DataBases) CheckGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
-
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetSort(bson.M{"uid": 1})
-	var userChats []UserChat2
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-	mapSeq := make(map[uint32]int)
-	mapSeqMsg := make(map[uint32]open_im_sdk.MsgData)
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		var currentMsgs []MsgInfo
-		for i := 0; i < len(userChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			if val, ok := mapSeq[msg.Seq]; ok {
-				log.NewError(operationID, "seq dup", msg.Seq, msg.ClientMsgID, msg.ServerMsgID, msg.ContentType, msg.SendTime, msg.CreateTime, val)
-				mapSeq[msg.Seq] = val + 1
-				if msg.ContentType < 1000 {
-					currentMsgs = append(currentMsgs, userChat.Msg[i])
-					if data, ok1 := mapSeqMsg[msg.Seq]; ok1 {
-						log.NewError(operationID, "seq dup msg", data.Seq, data.ClientMsgID, data.ServerMsgID, data.ContentType, data.SendTime, data.CreateTime)
-					}
-				}
-			} else {
-				mapSeq[msg.Seq] = 1
-				currentMsgs = append(currentMsgs, userChat.Msg[i])
-				mapSeqMsg[msg.Seq] = *msg
-			}
-		}
-
-		log.NewError(operationID, userChat.ID, userChat.UID, len(userChat.Msg),  len(currentMsgs))
-		if len(currentMsgs) != len(userChat.Msg) {
-			log.NewError(operationID, "update user chat")
-			objID, _ := primitive.ObjectIDFromHex(userChat.ID)
-			_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"msg": currentMsgs}})
-			if err != nil {
-				log.NewError(operationID, "update err", userChat.ID, userChat.UID, err.Error())
-			} else {
-				log.NewError(operationID, "update success",  userChat.ID, userChat.UID)
-			}
-		}
-	}
-	return nil, nil
-}
-//2
-func (d *DataBases) ResizeGroupAllMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
-
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetSort(bson.M{"uid": 1})
-	var userChats []UserChat
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-	mapSeq := make(map[uint32]int)
-	//mapClientId := make(map[string]int)
-	mapSeqData := make(map[uint32]MsgInfo)
-	mapSeqMsg := make(map[uint32]open_im_sdk.MsgData)
-
-	//var seqs [] uint32
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		for i := 0; i < len(userChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			if val, ok := mapSeq[msg.Seq]; ok {
-				log.NewError(operationID, "seq dup", msg.Seq, msg.ClientMsgID, msg.ServerMsgID, msg.ContentType, msg.SendTime, msg.CreateTime, val)
-				mapSeq[msg.Seq] = val + 1
-				if msg.ContentType < 1000 {
-					if data, ok1 := mapSeqMsg[msg.Seq]; ok1 {
-						log.NewError(operationID, "seq dup msg", data.Seq, data.ClientMsgID, data.ServerMsgID, data.ContentType, data.SendTime, data.CreateTime)
-						if data.ContentType > 1000 || (data.ContentType > msg.ContentType && msg.ContentType == 110) {
-							mapSeqData[msg.Seq] = userChat.Msg[i]
-							mapSeqMsg[msg.Seq] = *msg
-						}
-					}
-				}
-			} else {
-				mapSeq[msg.Seq] = 1
-				mapSeqData[msg.Seq] = userChat.Msg[i]
-				mapSeqMsg[msg.Seq] = *msg
-			}
-		}
-		log.NewError(operationID, userChat.UID)
-	}
-	mapUserChat := make(map[string]UserChat)
-	for i := 1; i <= int(maxSeq); i++ {
-		uuid := getSeqUid(uid, uint32(i))
-		if us, ok2 := mapUserChat[uuid]; ok2 {
-			if data, ok := mapSeqData[uint32(i)]; ok {
-				us.Msg = append(us.Msg, data)
-			} else {
-				emptyData := MsgInfo{
-					SendTime: 0,
-					Msg: nil,
-				}
-				us.Msg = append(us.Msg, emptyData)
-			}
-			mapUserChat[uuid] = us
-		} else {
-			data3 := UserChat{
-				UID: uuid,
-				Msg: []MsgInfo{},
-			}
-			if data, ok := mapSeqData[uint32(i)]; ok {
-				data3.Msg = append(data3.Msg, data)
-			} else {
-				emptyData := MsgInfo{
-					SendTime: 0,
-					Msg: nil,
-				}
-				data3.Msg = append(data3.Msg, emptyData)
-			}
-			mapUserChat[uuid] = data3
-		}
-	}
-
-	for k, v := range mapUserChat {
-		modifyUidId := fmt.Sprintf("modify_%s", v.UID)
-		log.NewError(operationID, "mapUserChat", k, len(v.Msg), v.UID, modifyUidId)
-		//TODO update old uid
-		//_, err = c.UpdateOne(sCtx, bson.M{"user_id": userID}, bson.M{"$addToSet": bson.M{"group_id_list": groupID}}, opts)
-		_, err = c.UpdateOne(ctx, bson.M{"uid": v.UID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
-		if err == nil {
-			if _, err = c.InsertOne(ctx, &v); err != nil {
-				log.NewError(operationID, "InsertOne failed", k, len(v.Msg), err.Error())
-				return nil, nil
-			}
-		}
-	}
-	return nil, nil
-}
-//3
-func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq)
-
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetSort(bson.M{"uid": 1})
-	var userChats []UserChat
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-	mapContentCount := make(map[int32]int)
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		for i := 0; i < len(userChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			log.NewError(operationID, "UserMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
-			if v, ok := mapContentCount[msg.ContentType]; ok {
-				mapContentCount[msg.ContentType] = v + 1
-			} else {
-				mapContentCount[msg.ContentType] = 1
-			}
-		}
-	}
-	for k, v := range mapContentCount {
-		log.Error(operationID, utils.GetSelfFuncName(), "contentCount", k, v)
-	}
-	return nil, nil
-}
-//4
-func (d *DataBases) RemoveGroupSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	//seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetSort(bson.M{"uid": 1})
-	var userChats []UserChat2
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		currentMsgs := make([]MsgInfo, 0)
-		for i := 0; i < len(userChat.Msg); i++ {
-			if userChat.Msg[i].SendTime == 0 {
-				continue
-			}
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			if msg.ContentType < 1000 || msg.ContentType == 1501 {
-				currentMsgs = append(currentMsgs, userChat.Msg[i])
-			}
-		}
-		log.NewError(operationID, userChat.ID, userChat.UID, len(userChat.Msg),  len(currentMsgs))
-		if len(currentMsgs) != len(userChat.Msg) {
-			log.NewError(operationID, "update user chat")
-			objID, _ := primitive.ObjectIDFromHex(userChat.ID)
-			_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"msg": currentMsgs}})
-			if err != nil {
-				log.NewError(operationID, "update err", userChat.ID, userChat.UID, err.Error())
-			} else {
-				log.NewError(operationID, "update success",  userChat.ID, userChat.UID)
-			}
-		}
-	}
-	return nil, nil
-}
-
-//5
-func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetSort(bson.M{"uid": 1})
-	var userChats []UserChat2
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-	allMsgs := make([]open_im_sdk.MsgData, 0)
-	sendTimes := make([]int64, 0)
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		for i := 0; i < len(userChat.Msg); i++ {
-			if userChat.Msg[i].SendTime == 0 {
-				continue
-			}
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			if msg.ContentType < 1000 || msg.ContentType == 1501 {
-				allMsgs = append(allMsgs, *msg)
-				sendTimes = append(sendTimes, userChat.Msg[i].SendTime)
-			}
-		}
-		log.NewError(operationID, userChat.ID, userChat.UID)
-		modifyUidId := fmt.Sprintf("modify_%s", userChat.UID)
-		log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
-		objID, _ := primitive.ObjectIDFromHex(userChat.ID)
-		_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
-	}
-	var seq	uint32 = 1
-	mapUserChat := make(map[string]UserChat)
-	//uuid := getSeqUid(uid, uint32(i))
-	for i := 0; i < len(allMsgs); i++ {
-		allMsgs[i].Seq = seq
-		msg, err := proto.Marshal(&allMsgs[i])
-		if err != nil {
-			log.NewError(operationID, "userChat", err.Error())
-			return nil, err
-		}
-		msgInfo := MsgInfo{
-			Msg: msg,
-			SendTime: sendTimes[i],
-		}
-		uuid := getSeqUid(uid, seq)
-		if us, ok := mapUserChat[uuid]; ok {
-			us.Msg = append(us.Msg, msgInfo)
-			mapUserChat[uuid] = us
-		} else {
-			nuc := UserChat{
-				UID: uuid,
-				Msg: []MsgInfo{},
-			}
-			nuc.Msg = append(nuc.Msg, msgInfo)
-			mapUserChat[uuid] = nuc
-		}
-		seq++
-	}
-	for k, v := range mapUserChat {
-		if _, err = c.InsertOne(ctx, &v); err != nil {
-			log.NewError(operationID, "InsertOne failed", k, len(v.Msg), err.Error())
-			return nil, nil
-		}
-	}
-	if len(sendTimes) == 0 {
-		seq = 0
-	}
-	err = d.SetUserMaxSeq(uid, uint64(seq))
-	if err != nil {
-		log.NewError(operationID, "SetUserMaxSeq", uid, seq, err.Error())
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-//6
-func (d *DataBases) CheckUserSeq(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	regex := fmt.Sprintf("^%s", uid)
-	findOpts := options.Find().SetLimit(1).SetSort(bson.M{"uid": -1})
-	var userChats []UserChat
-	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &userChats); err != nil {
-		return nil, err
-	}
-
-	var msgMaxSeq uint32 = 0
-	for _, userChat := range userChats {
-		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
-		for i := 0; i < len(userChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", uid, err.Error())
-				return nil, err
-			}
-			if msgMaxSeq < msg.Seq {
-				msgMaxSeq = msg.Seq
-			}
-		}
-	}
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, maxSeq, msgMaxSeq)
-	if err == redis.Nil {
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "redis nil",  maxSeq, msgMaxSeq)
-	} else if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "redis err", maxSeq, msgMaxSeq, err.Error())
-	} else {
-		if maxSeq < uint64(msgMaxSeq) {
-			log.NewError(operationID, utils.GetSelfFuncName(), "redis seq no match", uid, maxSeq, msgMaxSeq)
-		}
-	}
-
-	return nil, nil
-}
-
-
 // deleted by wg 2022-12-12
 //func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
 //	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
@@ -1818,8 +895,6 @@ func (d *DataBases) CheckUserSeq(uid string, operationID string) (seqMsg []*open
 //	log.NewDebug(operationID, "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 //	return nil
 //}
-
-
 
 // deleteMsgByLogic delete by wg 2022-12-09
 //func (d *DataBases) DelMsgLogic(uid string, seqList []uint32, operationID string) error {

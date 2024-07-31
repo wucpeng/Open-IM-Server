@@ -2,20 +2,20 @@ package msg
 
 import (
 	api "Open_IM/pkg/base_info"
-	commonDB "Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/config"
+	commonDB "Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbChat "Open_IM/pkg/proto/msg"
 	sdk_ws "Open_IM/pkg/proto/sdk_ws"
+	"Open_IM/pkg/utils"
 	//"bytes"
 	"context"
 	"github.com/gin-gonic/gin"
 	//"io/ioutil"
 	"net/http"
 	"strings"
-	"Open_IM/pkg/utils"
 )
 
 type paramsUserNewestSeq struct {
@@ -69,14 +69,14 @@ func GetSeq(c *gin.Context) {
 
 }
 
-
 type GroupCalendarReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
-	StartTime   int64 `json:"startTime"  binding:"required"`
-	EndTime     int64 `json:"endTime"  binding:"required"`
+	StartTime   int64  `json:"startTime"  binding:"required"`
+	EndTime     int64  `json:"endTime"  binding:"required"`
 	GroupID     string `json:"groupID" binding:"required"`
 }
+
 func GetGroupCalendar(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -106,20 +106,20 @@ func GetGroupCalendar(c *gin.Context) {
 			times = append(times, md.SendTime)
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"errCode":       0,
-			"errMsg":        "",
-			"data": times,
+			"errCode": 0,
+			"errMsg":  "",
+			"data":    times,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"errCode":       0,
-			"errMsg":        "",
-			"data": messages,
+			"errCode": 0,
+			"errMsg":  "",
+			"data":    messages,
 		})
 	}
 }
 
-func reverseSlice(s []*sdk_ws.MsgData)  {
+func reverseSlice(s []*sdk_ws.MsgData) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
@@ -129,14 +129,15 @@ type GroupForwardReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
 	GroupID     string `json:"groupID" binding:"required"`
-	StartTime   int64 `json:"startTime"`
-	EndTime     int64 `json:"endTime"`
-	Forward     int64 `json:"forward"`
-	TimeDesc     int64 `json:"timeDesc"`
+	StartTime   int64  `json:"startTime"`
+	EndTime     int64  `json:"endTime"`
+	Forward     int64  `json:"forward"`
+	TimeDesc    int64  `json:"timeDesc"`
 	LastMsgId   uint32 `json:"lastMsgId"`
 	AssignId    string `json:"assignId"`
-	PageSize    int `json:"pageSize"`
+	PageSize    int    `json:"pageSize"`
 }
+
 func GetGroupForward(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -171,9 +172,9 @@ func GetGroupForward(c *gin.Context) {
 	}
 	if len(messages) < 1 {
 		c.JSON(http.StatusOK, gin.H{
-			"errCode":       0,
-			"errMsg":        "",
-			"data": messages,
+			"errCode": 0,
+			"errMsg":  "",
+			"data":    messages,
 		})
 		return
 	}
@@ -191,24 +192,24 @@ func GetGroupForward(c *gin.Context) {
 		log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
 		if i != -1 {
 			if params.Forward == 1 { //下一页
-				len3 := i+params.PageSize + 1
+				len3 := i + params.PageSize + 1
 				if len3 > len(messages) {
 					len3 = len(messages)
 				}
-				messages = messages[i+1:len3]
+				messages = messages[i+1 : len3]
 			} else { //上一页
 				//messages = messages[:i]
 				if i > params.PageSize {
-					messages = messages[i - params.PageSize : i]
+					messages = messages[i-params.PageSize : i]
 				} else {
-					messages = messages[: i]
+					messages = messages[:i]
 				}
 			}
 		} else {
 			c.JSON(http.StatusOK, gin.H{
-				"errCode":       10001,
-				"errMsg":        "",
-				"data": nil,
+				"errCode": 10001,
+				"errMsg":  "",
+				"data":    nil,
 			})
 			return
 		}
@@ -223,16 +224,16 @@ func GetGroupForward(c *gin.Context) {
 		} else { //上一页
 			lenM := len(messages)
 			if lenM > params.PageSize {
-				messages = messages[lenM - params.PageSize:lenM]
+				messages = messages[lenM-params.PageSize : lenM]
 			} else {
 				messages = messages[:lenM]
 			}
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
-		"data": messages,
+		"errCode": 0,
+		"errMsg":  "",
+		"data":    messages,
 	})
 }
 
@@ -240,12 +241,13 @@ type GroupRangeReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
 	GroupID     string `json:"groupID" binding:"required"`
-	TimeDesc    int64 `json:"timeDesc"`
+	TimeDesc    int64  `json:"timeDesc"`
 	LastMsgId   uint32 `json:"lastMsgId"`
-	PageSize    int `json:"pageSize"`
-	StartTime   int64 `json:"startTime"`
-	EndTime     int64 `json:"endTime"`
+	PageSize    int    `json:"pageSize"`
+	StartTime   int64  `json:"startTime"`
+	EndTime     int64  `json:"endTime"`
 }
+
 func GetGroupRange(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -270,9 +272,9 @@ func GetGroupRange(c *gin.Context) {
 	}
 	if len(messages) == 0 {
 		c.JSON(http.StatusOK, gin.H{
-			"errCode":       0,
-			"errMsg":        "",
-			"data": messages,
+			"errCode": 0,
+			"errMsg":  "",
+			"data":    messages,
 		})
 		return
 	}
@@ -290,7 +292,7 @@ func GetGroupRange(c *gin.Context) {
 		}
 		//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages))
 		if i != -1 {
-			len3 := i+params.PageSize
+			len3 := i + params.PageSize
 			if len3 > len(messages) {
 				len3 = len(messages)
 			}
@@ -301,9 +303,9 @@ func GetGroupRange(c *gin.Context) {
 			messages = messages[len1:len3]
 		} else {
 			c.JSON(http.StatusOK, gin.H{
-				"errCode":       10001,
-				"errMsg":        "",
-				"data": nil,
+				"errCode": 10001,
+				"errMsg":  "",
+				"data":    nil,
 			})
 			return
 		}
@@ -316,20 +318,20 @@ func GetGroupRange(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
-		"data": messages,
+		"errCode": 0,
+		"errMsg":  "",
+		"data":    messages,
 	})
 }
-
 
 type UserCalendarReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
-	StartTime   int64 `json:"startTime"  binding:"required"`
-	EndTime     int64 `json:"endTime"  binding:"required"`
+	StartTime   int64  `json:"startTime"  binding:"required"`
+	EndTime     int64  `json:"endTime"  binding:"required"`
 	SenderID    string `json:"senderID"  binding:"required"`
 }
+
 func GetUserCalendar(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -357,9 +359,9 @@ func GetUserCalendar(c *gin.Context) {
 		times = append(times, md.SendTime)
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
-		"data": times,
+		"errCode": 0,
+		"errMsg":  "",
+		"data":    times,
 	})
 }
 
@@ -367,13 +369,14 @@ type UserForwardReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
 	SenderID    string `json:"senderID" binding:"required"`
-	StartTime   int64 `json:"startTime"`
-	EndTime     int64 `json:"endTime"`
-	Forward     int64 `json:"forward"`
-	TimeDesc     int64 `json:"timeDesc"`
+	StartTime   int64  `json:"startTime"`
+	EndTime     int64  `json:"endTime"`
+	Forward     int64  `json:"forward"`
+	TimeDesc    int64  `json:"timeDesc"`
 	LastMsgId   uint32 `json:"lastMsgId"`
-	PageSize    int `json:"pageSize"`
+	PageSize    int    `json:"pageSize"`
 }
+
 func GetUserForward(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -398,9 +401,9 @@ func GetUserForward(c *gin.Context) {
 	}
 	if len(messages) == 0 {
 		c.JSON(http.StatusOK, gin.H{
-			"errCode":       0,
-			"errMsg":        "",
-			"data": messages,
+			"errCode": 0,
+			"errMsg":  "",
+			"data":    messages,
 		})
 		return
 	}
@@ -419,26 +422,26 @@ func GetUserForward(c *gin.Context) {
 		//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len(messages), params.LastMsgId)
 		if i != -1 {
 			if params.Forward == 1 { //下一页
-				len3 := i+params.PageSize + 1
+				len3 := i + params.PageSize + 1
 				if len3 > len(messages) {
 					len3 = len(messages)
 				}
-				messages = messages[i+1:len3]
+				messages = messages[i+1 : len3]
 				//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i, len3)
 			} else { //上一页
 				//messages = messages[:i]
 				if i > params.PageSize {
-					messages = messages[i - params.PageSize : i]
+					messages = messages[i-params.PageSize : i]
 				} else {
-					messages = messages[: i]
+					messages = messages[:i]
 				}
 				//log.NewInfo(params.OperationID, utils.GetSelfFuncName(), i)
 			}
 		} else {
 			c.JSON(http.StatusOK, gin.H{
-				"errCode":       10001,
-				"errMsg":        "",
-				"data": nil,
+				"errCode": 10001,
+				"errMsg":  "",
+				"data":    nil,
 			})
 			return
 		}
@@ -452,16 +455,16 @@ func GetUserForward(c *gin.Context) {
 		} else { //上一页
 			lenM := len(messages)
 			if lenM > params.PageSize {
-				messages = messages[lenM - params.PageSize:lenM]
+				messages = messages[lenM-params.PageSize : lenM]
 			} else {
 				messages = messages[:lenM]
 			}
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
-		"data": messages,
+		"errCode": 0,
+		"errMsg":  "",
+		"data":    messages,
 	})
 }
 
@@ -469,11 +472,12 @@ type GroupAtReq struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
 	GroupID     string `json:"groupID" binding:"required"`
-	AtMsgId   	string `json:"atMsgId" binding:"required"`
+	AtMsgId     string `json:"atMsgId" binding:"required"`
 	EndMsgId    string `json:"endMsgId" binding:"required"`
-	StartTime   int64 `json:"startTime"`
-	EndTime     int64 `json:"endTime"`
+	StartTime   int64  `json:"startTime"`
+	EndTime     int64  `json:"endTime"`
 }
+
 func GetGroupAt(c *gin.Context) {
 	//bodyData, _ := ioutil.ReadAll(c.Request.Body)
 	//log.NewInfo("2222", utils.GetSelfFuncName(), "Body", string(bodyData))
@@ -529,8 +533,9 @@ func GetGroupAt(c *gin.Context) {
 type CheckUserMsg struct {
 	OperationID string `json:"operationID"  binding:"required"`
 	UserID      string `json:"userID"  binding:"required"`
-	Type      	int32 `json:"type"  binding:"required"`
+	Type        int32  `json:"type"  binding:"required"`
 }
+
 func CheckUserMongoMsg(c *gin.Context) {
 	params := CheckUserMsg{}
 	if err := c.BindJSON(&params); err != nil {
@@ -542,42 +547,22 @@ func CheckUserMongoMsg(c *gin.Context) {
 	//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "token validate err" + err.Error()})
 	//	return
 	//}
+	log.NewError(params.OperationID, utils.GetSelfFuncName(), params.Type, params.UserID)
 	if params.Type == 1 {
-		_, err := commonDB.DB.CheckGroupAllMsgList(params.UserID, params.OperationID)
-		if err != nil {
-			log.NewError(params.OperationID, utils.GetSelfFuncName(), "CheckGroupAllMsgList failed", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
-			return
-		}
-	} else if params.Type == 2{
-		_, err := commonDB.DB.ResizeGroupAllMsgList(params.UserID, params.OperationID)
-		if err != nil {
-			log.NewError(params.OperationID, utils.GetSelfFuncName(), "ResizeGroupAllMsgList failed", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
-			return
-		}
-	} else if params.Type == 3 {
 		_, err := commonDB.DB.UserMsgLogs(params.UserID, params.OperationID)
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), "UserMsgLogs failed", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
 			return
 		}
-	} else if params.Type == 4 {
-		_, err := commonDB.DB.RemoveGroupSystemMsgList(params.UserID, params.OperationID)
-		if err != nil {
-			log.NewError(params.OperationID, utils.GetSelfFuncName(), "RemoveGroupSystemMsgList failed", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
-			return
-		}
-	} else if params.Type == 5 {
+	} else if params.Type == 2 {
 		_, err := commonDB.DB.ResetSystemMsgList(params.UserID, params.OperationID)
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), "ResetSystemMsgList failed", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})
 			return
 		}
-	} else if params.Type == 6 {
+	} else if params.Type == 3 {
 		_, err := commonDB.DB.CheckUserSeq(params.UserID, params.OperationID)
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), "CheckUserSeq failed", err.Error())
@@ -585,9 +570,8 @@ func CheckUserMongoMsg(c *gin.Context) {
 			return
 		}
 	}
-
 	c.JSON(http.StatusOK, gin.H{
-		"errCode":       0,
-		"errMsg":        "",
+		"errCode": 0,
+		"errMsg":  "",
 	})
 }
