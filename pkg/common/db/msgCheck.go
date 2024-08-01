@@ -2,6 +2,7 @@ package db
 
 import (
 	"Open_IM/pkg/common/config"
+	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -15,6 +16,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
+
+type UserChat2 struct {
+	ID  string `bson:"_id"`
+	UID string
+	//ListIndex int `bson:"index"`
+	Msg []MsgInfo
+}
 
 func (d *DataBases) getUserChats(uid string, operationID string) ([]UserChat, *mongo.Cursor, error) {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
@@ -81,7 +89,7 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 
 // 2 过滤掉系统消息并重置seq值 替换
 func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
 	if err == redis.Nil {
 		return seqMsg, nil
@@ -90,18 +98,23 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 		return nil, utils.Wrap(err, "")
 	}
 	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, maxSeq)
-	userChats, cursor, err := d.getUserChats(uid, operationID)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+	regex := fmt.Sprintf("^%s", uid)
+	findOpts := options.Find().SetSort(bson.M{"uid": 1})
+	var userChats []UserChat2
+	cursor, err := c.Find(ctx, bson.M{"uid": bson.M{"$regex": regex}}, findOpts)
 	if err != nil {
 		return nil, err
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-
+	if err = cursor.All(context.TODO(), &userChats); err != nil {
+		return nil, err
+	}
 	allMsgs := make([]open_im_sdk.MsgData, 0)
 	sendTimes := make([]int64, 0)
 	for _, userChat := range userChats {
 		cursor.Decode(&userChat)
-		//log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
 		for i := 0; i < len(userChat.Msg); i++ {
 			if userChat.Msg[i].SendTime == 0 {
 				continue
@@ -116,14 +129,15 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 				sendTimes = append(sendTimes, userChat.Msg[i].SendTime)
 			}
 		}
-		//log.NewError(operationID, userChat.ID, userChat.UID)
+		log.NewError(operationID, userChat.ID, userChat.UID)
 		modifyUidId := fmt.Sprintf("modify_%s", userChat.UID)
-		//log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
+		log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
 		objID, _ := primitive.ObjectIDFromHex(userChat.ID)
 		_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
 	}
 	var seq uint32 = 1
 	mapUserChat := make(map[string]UserChat)
+	//uuid := getSeqUid(uid, uint32(i))
 	for i := 0; i < len(allMsgs); i++ {
 		allMsgs[i].Seq = seq
 		msg, err := proto.Marshal(&allMsgs[i])
@@ -164,6 +178,105 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 		return nil, err
 	}
 	return nil, nil
+}
+
+// 用于计算群组消息日志 历史消息等 操作
+func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, groupID)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+
+	sChat := UserChat{}
+	for _, seqUid := range seqUsers {
+		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
+			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
+			continue
+		}
+		for i := 0; i < len(sChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
+				return nil, err
+			}
+			if groupID != msg.GroupID {
+				continue
+			}
+			if msg.Status == constant.MsgDeleted {
+				continue
+			}
+			if startTime != 0 && msg.SendTime < startTime {
+				continue
+			}
+			if endTime != 0 && msg.SendTime > endTime {
+				break
+			}
+			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
+				// || (msg.ContentType > 1500 && msg.ContentType < 1600) {
+				//log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
+				seqMsg = append(seqMsg, msg)
+			}
+		}
+	}
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
+	return seqMsg, nil
+}
+
+// 用于计算私聊消息日志 历史消息等 操作
+func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+
+	sChat := UserChat{}
+	for _, seqUid := range seqUsers {
+		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
+			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
+			continue
+		}
+		for i := 0; i < len(sChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
+				return nil, err
+			}
+			if msg.Status == constant.MsgDeleted {
+				continue
+			}
+			if msg.SessionType != constant.SingleChatType {
+				continue
+			}
+			if startTime != 0 && msg.SendTime < startTime {
+				continue
+			}
+			if endTime != 0 && msg.SendTime > endTime {
+				break
+			}
+			isSingle := (msg.SendID == userId && msg.RecvID == uid) || (msg.SendID == uid && msg.RecvID == userId)
+			if !isSingle {
+				continue
+			}
+			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
+				seqMsg = append(seqMsg, msg)
+			}
+		}
+	}
+	return seqMsg, nil
 }
 
 // 3 对比seq与消息中seq对应关系

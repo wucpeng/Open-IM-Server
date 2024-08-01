@@ -45,19 +45,15 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 	log.NewInfo(m.OperationID, "Basic Info Authentication Success", m.SendID, m.MsgIncr, m.ReqIdentifier)
 	switch m.ReqIdentifier {
 	case constant.WSGetNewestSeq:
-		//log.NewInfo(m.OperationID, "getSeqReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.getSeqReq(conn, &m)
 		promePkg.PromeInc(promePkg.GetNewestSeqTotalCounter)
 	case constant.WSSendMsg:
-		//log.NewInfo(m.OperationID, "sendMsgReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.sendMsgReq(conn, &m)
 		promePkg.PromeInc(promePkg.MsgRecvTotalCounter)
 		log.NewError("", "WSSendMsg", time.Since(t1))
 	case constant.WSSendSignalMsg:
-		//log.NewInfo(m.OperationID, "sendSignalMsgReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.sendSignalMsgReq(conn, &m)
 	case constant.WSPullMsgBySeqList:
-		//log.NewInfo(m.OperationID, "pullMsgBySeqListReq ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 		ws.pullMsgBySeqListReq(conn, &m)
 		promePkg.PromeInc(promePkg.PullMsgBySeqListTotalCounter)
 	case constant.WsLogoutMsg:
@@ -97,7 +93,7 @@ func (ws *WServer) getSeqReq(conn *UserConn, m *Req) {
 			log.Error(rpcReq.OperationID, "rpc call failed to GetMaxAndMinSeq ", nReply.String())
 			ws.getSeqResp(conn, m, nReply)
 		} else {
-			log.NewInfo(rpcReq.OperationID, "rpc call success to getSeqReq", rpcReply.String())
+			log.NewInfo(rpcReq.OperationID, "rpc call success to getSeqReq", m.SendID, rpcReply.String())
 			ws.getSeqResp(conn, m, rpcReply)
 		}
 	} else {
@@ -292,8 +288,6 @@ func SetTokenKicked(userID string, platformID int, operationID string) {
 		return
 	}
 }
-
-
 
 func (ws *WServer) sendSignalMsgReq(conn *UserConn, m *Req) {
 	log.NewInfo(m.OperationID, "Ws call success to sendSignalMsgReq start", m.MsgIncr, m.ReqIdentifier, m.SendID, string(m.Data))

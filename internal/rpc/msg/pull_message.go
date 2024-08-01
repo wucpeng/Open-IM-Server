@@ -1,18 +1,13 @@
 package msg
 
 import (
-	//"Open_IM/pkg/common/constant"
-	//rocksCache "Open_IM/pkg/common/db/rocks_cache"
+	commonDB "Open_IM/pkg/common/db"
+	"Open_IM/pkg/common/log"
+	promePkg "Open_IM/pkg/common/prometheus"
+	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
 	go_redis "github.com/go-redis/redis/v8"
-	//"time"
-
-	commonDB "Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
-
-	promePkg "Open_IM/pkg/common/prometheus"
 )
 
 func (rpc *rpcChat) GetMaxAndMinSeq(_ context.Context, in *open_im_sdk.GetMaxAndMinSeqReq) (*open_im_sdk.GetMaxAndMinSeqResp, error) {
@@ -52,7 +47,6 @@ func (rpc *rpcChat) GetMaxAndMinSeq(_ context.Context, in *open_im_sdk.GetMaxAnd
 func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.PullMessageBySeqListReq) (*open_im_sdk.PullMessageBySeqListResp, error) {
 	log.NewInfo(in.OperationID, "rpc PullMessageBySeqList is arriving", in.String())
 	resp := new(open_im_sdk.PullMessageBySeqListResp)
-	//m := make(map[string]*open_im_sdk.MsgDataList)
 	redisMsgList, failedSeqList, err := commonDB.DB.GetMessageListBySeq(in.UserID, in.SeqList, in.OperationID)
 	if err != nil {
 		if err != go_redis.Nil {
@@ -70,7 +64,7 @@ func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.Pull
 			return resp, nil
 		} else {
 			promePkg.PromeAdd(promePkg.MsgPullFromMongoSuccessCounter, len(msgList))
-			log.Info(in.OperationID, "get message from mongo",  len(msgList))
+			log.Info(in.OperationID, "get message from mongo", len(msgList))
 			redisMsgList = append(redisMsgList, msgList...)
 			resp.List = redisMsgList
 		}
@@ -78,53 +72,54 @@ func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.Pull
 		promePkg.PromeAdd(promePkg.MsgPullFromRedisSuccessCounter, len(redisMsgList))
 		resp.List = redisMsgList
 	}
-	// TODO 处理客服账号小红点
-	//if in.UserID == "111111111111111111111112" && len(resp.List) > 0 {
-	//	t1 := time.Now()
-	//	//log.Info(in.OperationID, utils.GetSelfFuncName(), "custom process", len(resp.List))
-	//	for _, v := range resp.List {
-	//		isUnread := utils.GetSwitchFromOptions(v.Options, constant.IsUnreadCount)
-	//		if isUnread {
-	//			var conId string
-	//			if v.SessionType == constant.SingleChatType {
-	//				if in.UserID == v.RecvID {
-	//					conId = utils.GetConversationIDBySessionType(v.SendID, constant.SingleChatType)
-	//				} else {
-	//					conId = utils.GetConversationIDBySessionType(v.RecvID, constant.SingleChatType)
-	//				}
-	//			} else if v.SessionType == constant.GroupChatType {
-	//				conId = utils.GetConversationIDBySessionType(v.GroupID, constant.GroupChatType)
-	//			}
-	//			if len(conId) > 0 {
-	//				conversation, err := rocksCache.GetConversationFromCache(in.UserID, conId)
-	//				if err == nil {
-	//					if conversation.UpdateUnreadCountTime > v.SendTime {
-	//						utils.SetSwitchFromOptions(v.Options, constant.IsUnreadCount, false)
-	//					}
-	//				} else {
-	//					log.Error(in.OperationID, "custom process error", conId, err.Error())
-	//				}
-	//			}
-	//		}
-	//	}
-	//	log.NewError(in.OperationID, "custom cost", time.Since(t1))
-	//}
 	return resp, nil
 }
 
-type MsgFormats []*open_im_sdk.MsgData
+//type MsgFormats []*open_im_sdk.MsgData
+//
+//// Implement the sort.Interface interface to get the number of elements method
+//func (s MsgFormats) Len() int {
+//	return len(s)
+//}
+//
+//// Implement the sort.Interface interface comparison element method
+//func (s MsgFormats) Less(i, j int) bool {
+//	return s[i].SendTime < s[j].SendTime
+//}
+//
+//// Implement the sort.Interface interface exchange element method
+//func (s MsgFormats) Swap(i, j int) {
+//	s[i], s[j] = s[j], s[i]
+//}
 
-// Implement the sort.Interface interface to get the number of elements method
-func (s MsgFormats) Len() int {
-	return len(s)
-}
-
-//Implement the sort.Interface interface comparison element method
-func (s MsgFormats) Less(i, j int) bool {
-	return s[i].SendTime < s[j].SendTime
-}
-
-//Implement the sort.Interface interface exchange element method
-func (s MsgFormats) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
+// TODO 处理客服账号小红点
+//if in.UserID == "111111111111111111111112" && len(resp.List) > 0 {
+//	t1 := time.Now()
+//	//log.Info(in.OperationID, utils.GetSelfFuncName(), "custom process", len(resp.List))
+//	for _, v := range resp.List {
+//		isUnread := utils.GetSwitchFromOptions(v.Options, constant.IsUnreadCount)
+//		if isUnread {
+//			var conId string
+//			if v.SessionType == constant.SingleChatType {
+//				if in.UserID == v.RecvID {
+//					conId = utils.GetConversationIDBySessionType(v.SendID, constant.SingleChatType)
+//				} else {
+//					conId = utils.GetConversationIDBySessionType(v.RecvID, constant.SingleChatType)
+//				}
+//			} else if v.SessionType == constant.GroupChatType {
+//				conId = utils.GetConversationIDBySessionType(v.GroupID, constant.GroupChatType)
+//			}
+//			if len(conId) > 0 {
+//				conversation, err := rocksCache.GetConversationFromCache(in.UserID, conId)
+//				if err == nil {
+//					if conversation.UpdateUnreadCountTime > v.SendTime {
+//						utils.SetSwitchFromOptions(v.Options, constant.IsUnreadCount, false)
+//					}
+//				} else {
+//					log.Error(in.OperationID, "custom process error", conId, err.Error())
+//				}
+//			}
+//		}
+//	}
+//	log.NewError(in.OperationID, "custom cost", time.Since(t1))
+//}

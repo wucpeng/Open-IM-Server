@@ -4,6 +4,9 @@
 # 1 open_im_user
 # 2 open_im_friend
 # 3 open_im_group
+# 4
+# 5
+# 6
 
 source ./style_info.cfg
 source ./path_info.cfg

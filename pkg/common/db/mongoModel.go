@@ -4,7 +4,6 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
-	pbMsg "Open_IM/pkg/proto/msg"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
@@ -37,17 +36,6 @@ type UserChat struct {
 	UID string
 	//ListIndex int `bson:"index"`
 	Msg []MsgInfo
-}
-type UserChat2 struct {
-	ID  string `bson:"_id"`
-	UID string
-	//ListIndex int `bson:"index"`
-	Msg []MsgInfo
-}
-
-type GroupMember_x struct {
-	GroupID string
-	UIDList []string
 }
 
 // deleteMsgByLogic
@@ -102,6 +90,7 @@ func (d *DataBases) DelMsgBySeqListInOneDoc(suffixUserID string, seqList []uint3
 	return unexistSeqList, nil
 }
 
+// Set msg status=4 deleted
 func (d *DataBases) ReplaceMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgData, operationID string, seqIndex int) error {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), suffixUserID, *msg)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
@@ -121,87 +110,6 @@ func (d *DataBases) ReplaceMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgD
 		return utils.Wrap(err, "")
 	}
 	return nil
-}
-
-func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operationID string) error {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, *msg)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	uid = getSeqUid(uid, msg.Seq)
-	seqIndex := getMsgIndex(msg.Seq)
-	s := fmt.Sprintf("msg.%d.msg", seqIndex)
-	//log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
-	bytes, err := proto.Marshal(msg)
-	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal", err.Error())
-		return utils.Wrap(err, "")
-	}
-
-	updateResult, err := c.UpdateOne(
-		ctx, bson.M{"uid": uid},
-		bson.M{"$set": bson.M{s: bytes}})
-	log.NewDebug(operationID, utils.GetSelfFuncName(), updateResult)
-	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "UpdateOne", err.Error())
-		return utils.Wrap(err, "")
-	}
-	return nil
-}
-
-func (d *DataBases) GetMsgBySeqList(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, seqList)
-	var hasSeqList []uint32
-	singleCount := 0
-	session := d.mgoSession.Clone()
-	if session == nil {
-		return nil, errors.New("session == nil")
-	}
-	defer session.Close()
-	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
-	m := func(uid string, seqList []uint32) map[string][]uint32 {
-		t := make(map[string][]uint32)
-		for i := 0; i < len(seqList); i++ {
-			seqUid := getSeqUid(uid, seqList[i])
-			if value, ok := t[seqUid]; !ok {
-				var temp []uint32
-				t[seqUid] = append(temp, seqList[i])
-			} else {
-				t[seqUid] = append(value, seqList[i])
-			}
-		}
-		return t
-	}(uid, seqList)
-	sChat := UserChat{}
-	for seqUid, value := range m {
-		if err = c.Find(bson.M{"uid": seqUid}).One(&sChat); err != nil {
-			log.NewError(operationID, "not find seqUid", seqUid, value, uid, seqList, err.Error())
-			continue
-		}
-		singleCount = 0
-		for i := 0; i < len(sChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, value, uid, seqList, err.Error())
-				return nil, err
-			}
-			if isContainInt32(msg.Seq, value) {
-				seqMsg = append(seqMsg, msg)
-				hasSeqList = append(hasSeqList, msg.Seq)
-				singleCount++
-				if singleCount == len(value) {
-					break
-				}
-			}
-		}
-	}
-	if len(hasSeqList) != len(seqList) {
-		var diff []uint32
-		diff = utils.Difference(hasSeqList, seqList)
-		exceptionMSg := genExceptionMessageBySeqList(diff)
-		seqMsg = append(seqMsg, exceptionMSg...)
-
-	}
-	return seqMsg, nil
 }
 
 func (d *DataBases) GetUserMsgListByIndex(ID string, index int64) (*UserChat, error) { //cron_task/clear_msg.go
@@ -273,6 +181,7 @@ func (d *DataBases) GetNewestMsg(ID string) (msg *MsgInfo, err error) { //cron-c
 	return nil, errors.New("len(userChats) < 0")
 }
 
+// 最重要的 pull message
 func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) { //pull_message.go
 	var hasSeqList []uint32
 	singleCount := 0
@@ -324,6 +233,7 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 	return seqMsg, nil
 }
 
+// 根据 clientId 获取消息 用于撤销消息
 func (d *DataBases) GetMsgById(uid string, clientMsgId string, operationID string) (seqMsg *open_im_sdk.MsgData, err error) {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
@@ -352,106 +262,6 @@ func (d *DataBases) GetMsgById(uid string, clientMsgId string, operationID strin
 			}
 			if msg.ClientMsgID == clientMsgId {
 				return msg, err
-			}
-		}
-	}
-	return seqMsg, nil
-}
-
-func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, groupID)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-
-	sChat := UserChat{}
-	for _, seqUid := range seqUsers {
-		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
-			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
-			continue
-		}
-		for i := 0; i < len(sChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
-				return nil, err
-			}
-			if groupID != msg.GroupID {
-				continue
-			}
-			//log.NewDebug(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, msg.Status, msg.GroupID, string(msg.Content))
-			if msg.Status == constant.MsgDeleted {
-				continue
-			}
-			if startTime != 0 && msg.SendTime < startTime {
-				continue
-			}
-			if endTime != 0 && msg.SendTime > endTime {
-				break
-			}
-			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
-				// || (msg.ContentType > 1500 && msg.ContentType < 1600) {
-				//log.NewError(operationID, utils.GetSelfFuncName(), msg.ContentType, msg.SendTime, string(msg.Content))
-				seqMsg = append(seqMsg, msg)
-			}
-		}
-	}
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), len(seqMsg))
-	return seqMsg, nil
-}
-
-func (d *DataBases) GetSingleAllMsgList(uid string, userId string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
-	maxSeq, err := d.GetUserMaxSeq(uid)
-	if err == redis.Nil {
-		return seqMsg, nil
-	}
-	if err != nil {
-		return nil, utils.Wrap(err, "")
-	}
-	seqUsers := getSeqUserIDList(uid, uint32(maxSeq))
-	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid,  maxSeq, seqUsers)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-
-	sChat := UserChat{}
-	for _, seqUid := range seqUsers {
-		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
-			log.NewError(operationID, "not find seqUid", seqUid, uid, err.Error())
-			continue
-		}
-		for i := 0; i < len(sChat.Msg); i++ {
-			msg := new(open_im_sdk.MsgData)
-			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, err.Error())
-				return nil, err
-			}
-			if msg.Status == constant.MsgDeleted {
-				continue
-			}
-			if msg.SessionType != constant.SingleChatType {
-				continue
-			}
-			if startTime != 0 && msg.SendTime < startTime {
-				continue
-			}
-			if endTime != 0 && msg.SendTime > endTime {
-				break
-			}
-			isSingle := (msg.SendID == userId && msg.RecvID == uid) || (msg.SendID == uid && msg.RecvID == userId)
-			if !isSingle {
-				continue
-			}
-			if msg.ContentType == constant.Text || msg.ContentType == constant.Custom || msg.ContentType == constant.AtText || msg.ContentType == constant.AdvancedRevoke {
-				//log.NewInfo(operationID, utils.GetSelfFuncName(), string(msg.Content))
-				seqMsg = append(seqMsg, msg)
 			}
 		}
 	}
@@ -565,57 +375,6 @@ func genExceptionSuperGroupMessageBySeqList(seqList []uint32, groupID string) (e
 	return exceptionMsg
 }
 
-func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
-	var seqUid string
-	//newTime := getCurrentTimestampByMill()
-	session := d.mgoSession.Clone()
-	if session == nil {
-		return errors.New("session == nil")
-	}
-	defer session.Close()
-	//log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
-	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
-	seqUid = getSeqUid(uid, m.MsgData.Seq)
-	n, err := c.Find(bson.M{"uid": seqUid}).Count()
-	if err != nil {
-		return err
-	}
-	//log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
-	sMsg := MsgInfo{}
-	sMsg.SendTime = sendTime
-	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
-		return err
-	}
-	if n == 0 {
-		sChat := UserChat{}
-		sChat.UID = seqUid
-		sChat.Msg = append(sChat.Msg, sMsg)
-		err = c.Insert(&sChat)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = c.Update(bson.M{"uid": seqUid}, bson.M{"$push": bson.M{"msg": sMsg}})
-		if err != nil {
-			return err
-		}
-	}
-	//log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
-	return nil
-}
-
-func (d *DataBases) DelUserChatMongo2(uid string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	filter := bson.M{"uid": uid}
-
-	delTime := time.Now().Unix() - int64(config.Config.Mongo.DBRetainChatRecords)*24*3600
-	if _, err := c.UpdateOne(ctx, filter, bson.M{"$pull": bson.M{"msg": bson.M{"sendtime": bson.M{"$lte": delTime}}}}); err != nil {
-		return utils.Wrap(err, "")
-	}
-	return nil
-}
-
 func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) error {
 	ctx := context.Background()
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
@@ -636,25 +395,13 @@ func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) e
 	return utils.Wrap(err, "")
 }
 
-// const cTag = "tag"
-// const cSendLog = "send_log"
-// const cWorkMoment = "work_moment"
-// const cSuperGroup = "super_group"
-// const cUserToSuperGroup = "user_to_super_group"
-const cGroup = "group"
-const cCommentMsg = "comment_msg"
-
-func getCurrentTimestampByMill() int64 {
-	return time.Now().UnixNano() / 1e6
+func indexGen(uid string, seqSuffix uint32) string {
+	return uid + ":" + strconv.FormatInt(int64(seqSuffix), 10)
 }
 
 func getSeqUid(uid string, seq uint32) string {
 	seqSuffix := seq / singleGocMsgNum
 	return indexGen(uid, seqSuffix)
-}
-
-func GetSeqUid(uid string, seq uint32) string {
-	return getSeqUid(uid, seq)
 }
 
 func getSeqUserIDList(userID string, maxSeq uint32) []string {
@@ -667,22 +414,6 @@ func getSeqUserIDList(userID string, maxSeq uint32) []string {
 	return seqUserIDList
 }
 
-func getSeqSuperGroupID(groupID string, seq uint32) string {
-	seqSuffix := seq / singleGocMsgNum
-	return superGroupIndexGen(groupID, seqSuffix)
-}
-
-func getMsgIndex(seq uint32) int {
-	seqSuffix := seq / singleGocMsgNum
-	var index uint32
-	if seqSuffix == 0 {
-		index = (seq - seqSuffix*singleGocMsgNum) - 1
-	} else {
-		index = seq - seqSuffix*singleGocMsgNum
-	}
-	return int(index)
-}
-
 func isContainInt32(target uint32, List []uint32) bool {
 	for _, element := range List {
 		if target == element {
@@ -690,19 +421,6 @@ func isContainInt32(target uint32, List []uint32) bool {
 		}
 	}
 	return false
-}
-
-func indexGen(uid string, seqSuffix uint32) string {
-	return uid + ":" + strconv.FormatInt(int64(seqSuffix), 10)
-}
-
-func isNotContainInt32(target uint32, List []uint32) bool {
-	for _, i := range List {
-		if i == target {
-			return false
-		}
-	}
-	return true
 }
 
 func (d *DataBases) DelUserChat(uid string) error {
@@ -722,6 +440,47 @@ func (d *DataBases) DelUserChat(uid string) error {
 	//
 	//return nil
 }
+
+// const cTag = "tag"
+// const cSendLog = "send_log"
+// const cWorkMoment = "work_moment"
+// const cSuperGroup = "super_group"
+// const cUserToSuperGroup = "user_to_super_group"
+//const cGroup = "group"
+//const cCommentMsg = "comment_msg"
+//
+//func getCurrentTimestampByMill() int64 {
+//	return time.Now().UnixNano() / 1e6
+//}
+
+//func GetSeqUid(uid string, seq uint32) string {
+//	return getSeqUid(uid, seq)
+//}
+
+//
+//func getSeqSuperGroupID(groupID string, seq uint32) string {
+//	seqSuffix := seq / singleGocMsgNum
+//	return superGroupIndexGen(groupID, seqSuffix)
+//}
+//
+//func getMsgIndex(seq uint32) int {
+//	seqSuffix := seq / singleGocMsgNum
+//	var index uint32
+//	if seqSuffix == 0 {
+//		index = (seq - seqSuffix*singleGocMsgNum) - 1
+//	} else {
+//		index = seq - seqSuffix*singleGocMsgNum
+//	}
+//	return int(index)
+//}
+//func isNotContainInt32(target uint32, List []uint32) bool {
+//	for _, i := range List {
+//		if i == target {
+//			return false
+//		}
+//	}
+//	return true
+//}
 
 //
 //func (d *DataBases) MgoUserCount() (int, error) {
@@ -750,6 +509,11 @@ func (d *DataBases) DelUserChat(uid string) error {
 //	//sChat := UserChat{}
 //	//c.Find(nil).Skip(count).Limit(1).One(&sChat)
 //	//return sChat.UID, nil
+//}
+
+//type GroupMember_x struct {
+//	GroupID string
+//	UIDList []string
 //}
 
 func (d *DataBases) GetGroupMember(groupID string) []string {
@@ -896,6 +660,88 @@ func (d *DataBases) DelGroupMember(groupID, uid string) error {
 //	return nil
 //}
 
+//func (d *DataBases) GetMsgBySeqList(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+//	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, seqList)
+//	var hasSeqList []uint32
+//	singleCount := 0
+//	session := d.mgoSession.Clone()
+//	if session == nil {
+//		return nil, errors.New("session == nil")
+//	}
+//	defer session.Close()
+//	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
+//	m := func(uid string, seqList []uint32) map[string][]uint32 {
+//		t := make(map[string][]uint32)
+//		for i := 0; i < len(seqList); i++ {
+//			seqUid := getSeqUid(uid, seqList[i])
+//			if value, ok := t[seqUid]; !ok {
+//				var temp []uint32
+//				t[seqUid] = append(temp, seqList[i])
+//			} else {
+//				t[seqUid] = append(value, seqList[i])
+//			}
+//		}
+//		return t
+//	}(uid, seqList)
+//	sChat := UserChat{}
+//	for seqUid, value := range m {
+//		if err = c.Find(bson.M{"uid": seqUid}).One(&sChat); err != nil {
+//			log.NewError(operationID, "not find seqUid", seqUid, value, uid, seqList, err.Error())
+//			continue
+//		}
+//		singleCount = 0
+//		for i := 0; i < len(sChat.Msg); i++ {
+//			msg := new(open_im_sdk.MsgData)
+//			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
+//				log.NewError(operationID, "Unmarshal err", seqUid, value, uid, seqList, err.Error())
+//				return nil, err
+//			}
+//			if isContainInt32(msg.Seq, value) {
+//				seqMsg = append(seqMsg, msg)
+//				hasSeqList = append(hasSeqList, msg.Seq)
+//				singleCount++
+//				if singleCount == len(value) {
+//					break
+//				}
+//			}
+//		}
+//	}
+//	if len(hasSeqList) != len(seqList) {
+//		var diff []uint32
+//		diff = utils.Difference(hasSeqList, seqList)
+//		exceptionMSg := genExceptionMessageBySeqList(diff)
+//		seqMsg = append(seqMsg, exceptionMSg...)
+//
+//	}
+//	return seqMsg, nil
+//}
+
+// 更新消息 根据 msg.Seq
+//func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operationID string) error {
+//	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, *msg)
+//	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+//	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+//	uid = getSeqUid(uid, msg.Seq)
+//	seqIndex := getMsgIndex(msg.Seq)
+//	s := fmt.Sprintf("msg.%d.msg", seqIndex)
+//	//log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
+//	bytes, err := proto.Marshal(msg)
+//	if err != nil {
+//		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal", err.Error())
+//		return utils.Wrap(err, "")
+//	}
+//
+//	updateResult, err := c.UpdateOne(
+//		ctx, bson.M{"uid": uid},
+//		bson.M{"$set": bson.M{s: bytes}})
+//	log.NewDebug(operationID, utils.GetSelfFuncName(), updateResult)
+//	if err != nil {
+//		log.NewError(operationID, utils.GetSelfFuncName(), "UpdateOne", err.Error())
+//		return utils.Wrap(err, "")
+//	}
+//	return nil
+//}
+
 // deleteMsgByLogic delete by wg 2022-12-09
 //func (d *DataBases) DelMsgLogic(uid string, seqList []uint32, operationID string) error {
 //	sortkeys.Uint32s(seqList)
@@ -946,4 +792,55 @@ func (d *DataBases) DelGroupMember(groupID, uid string) error {
 //
 //func (d *DataBases) GetMinSeqFromMongo2(uid string) (MinSeq uint32, err error) {
 //	return 1, nil
+//}
+
+//func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
+//	var seqUid string
+//	//newTime := getCurrentTimestampByMill()
+//	session := d.mgoSession.Clone()
+//	if session == nil {
+//		return errors.New("session == nil")
+//	}
+//	defer session.Close()
+//	//log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
+//	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
+//	seqUid = getSeqUid(uid, m.MsgData.Seq)
+//	n, err := c.Find(bson.M{"uid": seqUid}).Count()
+//	if err != nil {
+//		return err
+//	}
+//	//log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
+//	sMsg := MsgInfo{}
+//	sMsg.SendTime = sendTime
+//	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
+//		return err
+//	}
+//	if n == 0 {
+//		sChat := UserChat{}
+//		sChat.UID = seqUid
+//		sChat.Msg = append(sChat.Msg, sMsg)
+//		err = c.Insert(&sChat)
+//		if err != nil {
+//			return err
+//		}
+//	} else {
+//		err = c.Update(bson.M{"uid": seqUid}, bson.M{"$push": bson.M{"msg": sMsg}})
+//		if err != nil {
+//			return err
+//		}
+//	}
+//	//log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
+//	return nil
+//}
+//
+//func (d *DataBases) DelUserChatMongo2(uid string) error {
+//	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+//	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
+//	filter := bson.M{"uid": uid}
+//
+//	delTime := time.Now().Unix() - int64(config.Config.Mongo.DBRetainChatRecords)*24*3600
+//	if _, err := c.UpdateOne(ctx, filter, bson.M{"$pull": bson.M{"msg": bson.M{"sendtime": bson.M{"$lte": delTime}}}}); err != nil {
+//		return utils.Wrap(err, "")
+//	}
+//	return nil
 //}
