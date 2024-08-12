@@ -89,7 +89,7 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 
 // 2 过滤掉系统消息并重置seq值 替换
 func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
 	maxSeq, err := d.GetUserMaxSeq(uid)
 	if err == redis.Nil {
 		return seqMsg, nil
@@ -114,7 +114,7 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 	sendTimes := make([]int64, 0)
 	for _, userChat := range userChats {
 		cursor.Decode(&userChat)
-		log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		//log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
 		for i := 0; i < len(userChat.Msg); i++ {
 			if userChat.Msg[i].SendTime == 0 {
 				continue
@@ -129,9 +129,9 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 				sendTimes = append(sendTimes, userChat.Msg[i].SendTime)
 			}
 		}
-		log.NewError(operationID, userChat.ID, userChat.UID)
+		//log.NewError(operationID, userChat.ID, userChat.UID)
 		modifyUidId := fmt.Sprintf("modify_%s", userChat.UID)
-		log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
+		//log.NewError(operationID, "userChat", userChat.ID, userChat.UID, modifyUidId)
 		objID, _ := primitive.ObjectIDFromHex(userChat.ID)
 		_, err = c.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"uid": modifyUidId}})
 	}

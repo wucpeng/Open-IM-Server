@@ -1,9 +1,3 @@
-/*
-** description("").
-** copyright('open-im,www.open-im.io').
-** author("fg,Gordon@open-im.io").
-** time(2021/3/5 14:31).
- */
 package logic
 
 import (
@@ -24,7 +18,6 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 	"strings"
-
 	//promePkg "Open_IM/pkg/common/prometheus"
 	//"github.com/golang/protobuf/proto"
 )
@@ -50,23 +43,22 @@ type PushCallbackResp struct {
 	OperationID string `json:"operationID"`
 }
 
-
 func MsgToUser(pushMsg *pbPush.PushMsgReq) {
 	var wsResult []*pbRelay.SingelMsgToUserResultList
 	isOfflinePush := utils.GetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsOfflinePush)
 	//log.Info(pushMsg.OperationID, "Get msg from msg_transfer And push msg", pushMsg.String(), isOfflinePush)
 	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
 
-	var UIDList = []string{pushMsg.PushToUserID}
-	callbackResp := callbackOnlinePush(pushMsg.OperationID, UIDList, pushMsg.MsgData)
-	//log.NewDebug(pushMsg.OperationID, utils.GetSelfFuncName(), "OnlinePush callback Resp")
-	if callbackResp.ErrCode != 0 {
-		log.NewError(pushMsg.OperationID, utils.GetSelfFuncName(), "callbackOnlinePush result: ", callbackResp)
-	}
-	if callbackResp.ActionCode != constant.ActionAllow {
-		log.NewDebug(pushMsg.OperationID, utils.GetSelfFuncName(), "OnlinePush stop")
-		return
-	}
+	//var UIDList = []string{pushMsg.PushToUserID}
+	//callbackResp := callbackOnlinePush(pushMsg.OperationID, UIDList, pushMsg.MsgData)
+	////log.NewDebug(pushMsg.OperationID, utils.GetSelfFuncName(), "OnlinePush callback Resp")
+	//if callbackResp.ErrCode != 0 {
+	//	log.NewError(pushMsg.OperationID, utils.GetSelfFuncName(), "callbackOnlinePush result: ", callbackResp)
+	//}
+	//if callbackResp.ActionCode != constant.ActionAllow {
+	//	log.NewDebug(pushMsg.OperationID, utils.GetSelfFuncName(), "OnlinePush stop")
+	//	return
+	//}
 
 	//Online push message
 	//log.Info(pushMsg.OperationID, "len  grpc", len(grpcCons), grpcCons)
@@ -175,6 +167,7 @@ func MsgToUser(pushMsg *pbPush.PushMsgReq) {
 	//	}
 	//}
 }
+
 //
 //func MsgToSuperGroupUser(pushMsg *pbPush.PushMsgReq) {
 //	var wsResult []*pbRelay.SingelMsgToUserResultList

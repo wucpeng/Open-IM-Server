@@ -10,6 +10,39 @@ import (
 	"net/http"
 )
 
+//func TokenCheck() *gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		//var ok bool
+//		//var errInfo, opUserID string
+//		//ok, opUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), "xxxxxxxxxxxx")
+//		//if !ok {
+//		//	errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
+//		//	log.NewError(req.OperationID, errMsg)
+//		//	c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
+//		//	return
+//		//}
+//		token := c.Request.Header.Get("token")
+//		log.NewError(token, utils.GetSelfFuncName())
+//		return
+//	}
+//}
+
+func TokenCheck(c *gin.Context) {
+	OperationID := utils.OperationIDGenerator()
+	token := c.Request.Header.Get("token")
+	log.NewError(OperationID, utils.GetSelfFuncName(), token)
+	ok, opUserID, errInfo := token_verify.GetUserIDFromToken(token, OperationID)
+	if !ok {
+		errMsg := OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
+		log.NewError(OperationID, errMsg)
+		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
+		c.Abort()
+		return
+	}
+	c.Set("opUserID", opUserID)
+	c.Next()
+}
+
 func SetAppBadge(c *gin.Context) {
 	var (
 		req  api.SetAppBadgeReq

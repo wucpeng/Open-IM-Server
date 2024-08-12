@@ -4,7 +4,6 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db/mysql_model/im_mysql_model"
-	rocksCache "Open_IM/pkg/common/db/rocks_cache"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
 	"fmt"
@@ -37,26 +36,26 @@ func StartCronTask() {
 			log.NewError(operationID, utils.GetSelfFuncName(), err.Error())
 		}
 
-		workingGroupIDList, err := im_mysql_model.GetGroupIDListByGroupType(constant.WorkingGroup)
-		if err == nil {
-			for _, groupID := range workingGroupIDList {
-				userIDList, err = rocksCache.GetGroupMemberIDListFromCache(groupID)
-				if err != nil {
-					log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupID)
-					continue
-				}
-				log.NewDebug(operationID, utils.GetSelfFuncName(), "groupID:", groupID, "userIDList:", userIDList)
-				if err := ResetUserGroupMinSeq(operationID, groupID, userIDList); err != nil {
-					log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupID, userIDList)
-				}
-				if err := checkMaxSeqWithMongo(operationID, groupID, constant.ReadDiffusion); err != nil {
-					log.NewError(operationID, utils.GetSelfFuncName(), groupID, err)
-				}
-			}
-		} else {
-			log.NewError(operationID, utils.GetSelfFuncName(), err.Error())
-			return
-		}
+		//workingGroupIDList, err := im_mysql_model.GetGroupIDListByGroupType(constant.WorkingGroup)
+		//if err == nil {
+		//	for _, groupID := range workingGroupIDList {
+		//		userIDList, err = rocksCache.GetGroupMemberIDListFromCache(groupID)
+		//		if err != nil {
+		//			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupID)
+		//			continue
+		//		}
+		//		log.NewDebug(operationID, utils.GetSelfFuncName(), "groupID:", groupID, "userIDList:", userIDList)
+		//		if err := ResetUserGroupMinSeq(operationID, groupID, userIDList); err != nil {
+		//			log.NewError(operationID, utils.GetSelfFuncName(), err.Error(), groupID, userIDList)
+		//		}
+		//		if err := checkMaxSeqWithMongo(operationID, groupID, constant.ReadDiffusion); err != nil {
+		//			log.NewError(operationID, utils.GetSelfFuncName(), groupID, err)
+		//		}
+		//	}
+		//} else {
+		//	log.NewError(operationID, utils.GetSelfFuncName(), err.Error())
+		//	return
+		//}
 
 		log.NewInfo(operationID, "====================== start del cron finished ======================")
 	})

@@ -1,9 +1,3 @@
-/*
-** description("").
-** copyright('open-im,www.open-im.io').
-** author("fg,Gordon@open-im.io").
-** time(2021/3/22 15:33).
- */
 package logic
 
 import (
@@ -20,8 +14,8 @@ import (
 )
 
 var (
-	rpcServer     RPCServer
-	pushCh        PushConsumerHandler
+	rpcServer RPCServer
+	pushCh    PushConsumerHandler
 	//producer      *kafka.Producer
 	offlinePusher pusher.OfflinePusher
 	successCount  uint64

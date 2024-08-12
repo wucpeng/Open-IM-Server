@@ -42,7 +42,7 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 		ws.sendErrMsg(conn, 201, err.Error(), m.ReqIdentifier, m.MsgIncr, m.OperationID)
 		return
 	}
-	log.NewInfo(m.OperationID, "Basic Info Authentication Success", m.SendID, m.MsgIncr, m.ReqIdentifier)
+	log.NewInfo(m.OperationID, "Basic Info Authentication Success", m.SendID, m.ReqIdentifier) //m.MsgIncr,
 	switch m.ReqIdentifier {
 	case constant.WSGetNewestSeq:
 		ws.getSeqReq(conn, &m)
@@ -62,7 +62,7 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 	default:
 		log.Error(m.OperationID, "ReqIdentifier failed ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 	}
-	log.NewInfo(m.OperationID, "goroutine num is ", runtime.NumGoroutine(), time.Since(t1))
+	log.NewInfo(m.OperationID, "goroutine num is ", m.SendID, runtime.NumGoroutine(), time.Since(t1))
 }
 
 func (ws *WServer) getSeqReq(conn *UserConn, m *Req) {
@@ -188,8 +188,11 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 			OperationID: m.OperationID,
 			MsgData:     &data,
 		}
+		if pbData.MsgData.OfflinePushInfo != nil {
+			pbData.MsgData.OfflinePushInfo = nil
+		}
 
-		//log.NewInfo(m.OperationID, "sendMsgReq", m.ReqIdentifier, m.SendID, m.MsgIncr, pbData.MsgData.String())
+		log.NewInfo(m.OperationID, "sendMsgReq", m.ReqIdentifier, m.SendID, pbData.MsgData.String())
 		if !config.Config.InputMessageTypingEnable && pbData.MsgData.ContentType == constant.Typing { // add by wg at 2022-12-06 增加 正在输入开关
 			nReply.ErrCode = 0
 			nReply.ErrMsg = ""

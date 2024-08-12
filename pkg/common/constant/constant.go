@@ -2,14 +2,6 @@ package constant
 
 const (
 
-	//group admin
-	//	OrdinaryMember = 0
-	//	GroupOwner     = 1
-	//	Administrator  = 2
-	//group application
-	//	Application      = 0
-	//	AgreeApplication = 1
-
 	//friend related
 	BlackListFlag         = 1
 	ApplicationFriendFlag = 0
@@ -20,7 +12,7 @@ const (
 	WSGetNewestSeq     = 1001
 	WSPullMsgBySeqList = 1002
 	WSSendMsg          = 1003
-	WSSendSignalMsg    = 1004  //实时语音及视频 未实现
+	WSSendSignalMsg    = 1004 //实时语音及视频 未实现
 	WSPushMsg          = 2001
 	WSKickOnlineMsg    = 2002
 	WsLogoutMsg        = 2003
@@ -37,7 +29,7 @@ const (
 	Merger                       = 107
 	Card                         = 108 //名片
 	Location                     = 109
-	Custom                       = 110  //自定义消息
+	Custom                       = 110 //自定义消息
 	Revoke                       = 111 // 撤销  无数据
 	HasReadReceipt               = 112 // 单聊已读
 	Typing                       = 113 // 正在输入状态消息  无数据
@@ -47,11 +39,6 @@ const (
 	AdvancedRevoke               = 118 //撤销
 	CustomNotTriggerConversation = 119
 	CustomOnlineOnly             = 120
-
-	Common             = 200
-	GroupMsg           = 201
-	SignalMsg          = 202
-	CustomNotification = 203
 
 	//SysRelated
 	NotificationBegin                     = 1000
@@ -87,8 +74,8 @@ const (
 	GroupDismissedNotification               = 1511
 	GroupMemberMutedNotification             = 1512
 	GroupMemberCancelMutedNotification       = 1513
-	GroupMutedNotification                   = 1514  // 群禁言通知
-	GroupCancelMutedNotification             = 1515  // 群取消禁言通知
+	GroupMutedNotification                   = 1514 // 群禁言通知
+	GroupCancelMutedNotification             = 1515 // 群取消禁言通知
 	GroupMemberInfoSetNotification           = 1516
 	GroupMemberSetToAdminNotification        = 1517
 	GroupMemberSetToOrdinaryUserNotification = 1518
@@ -171,16 +158,14 @@ const (
 	GroupStatusMuted     = 3
 
 	//GroupType
-	NormalGroup  = 0
-	SuperGroup   = 1
-	WorkingGroup = 2
-
+	NormalGroup         = 0
+	SuperGroup          = 1
+	WorkingGroup        = 2
 	GroupBaned          = 3
 	GroupBanPrivateChat = 4
 
 	//UserJoinGroupSource
-	JoinByAdmin = 1
-
+	JoinByAdmin      = 1
 	JoinByInvitation = 2
 	JoinBySearch     = 3
 	JoinByQRCode     = 4
@@ -251,24 +236,12 @@ const (
 	GroupNotification = 4
 )
 
-var ContentType2PushContent = map[int64]string{
-	Picture:   "[图片]",
-	Voice:     "[语音]",
-	Video:     "[视频]",
-	File:      "[文件]",
-	Text:      "你收到了一条文本消息",
-	AtText:    "[有人@你]",
-	GroupMsg:  "你收到一条群聊消息",
-	Common:    "你收到一条新消息",
-	SignalMsg: "音视频通话邀请",
-}
-
 const (
-	FieldRecvMsgOpt    = 1    // 接收消息选项： 0:在线正常接收消息，离线时进行推送,1:不会接收到消息,2:在线正常接收消息，离线不会有推送
-	FieldIsPinned      = 2    // 是否置顶
+	FieldRecvMsgOpt    = 1 // 接收消息选项： 0:在线正常接收消息，离线时进行推送,1:不会接收到消息,2:在线正常接收消息，离线不会有推送
+	FieldIsPinned      = 2 // 是否置顶
 	FieldAttachedInfo  = 3
-	FieldIsPrivateChat = 4    // 阅后即焚
-	FieldGroupAtType   = 5    // 群公告修改 @消息
+	FieldIsPrivateChat = 4 // 阅后即焚
+	FieldGroupAtType   = 5 // 群公告修改 @消息
 	FieldIsNotInGroup  = 6
 	FieldEx            = 7
 	FieldUnread        = 8 // 个人会话已读时间更新
@@ -309,28 +282,6 @@ const (
 	GroupRPCSendSize = 30
 )
 
-const FriendAcceptTip = "You have successfully become friends, so start chatting"
-
-func GroupIsBanChat(status int32) bool {
-	if status != GroupStatusMuted {
-		return false
-	}
-	return true
-}
-
-func GroupIsBanPrivateChat(status int32) bool {
-	if status != GroupBanPrivateChat {
-		return false
-	}
-	return true
-}
-
-const (
-	TokenKicked = 1001
-)
-
-const BigVersion = "v2"
-
 const LogFileName = "OpenIM.log"
 
 const StatisticsTimeInterval = 60
@@ -338,3 +289,53 @@ const StatisticsTimeInterval = 60
 const MaxNotificationNum = 2000
 
 const CurrentVersion = "v2.3.4-rc0"
+
+//
+//var ContentType2PushContent = map[int64]string{
+//	Picture:   "[图片]",
+//	Voice:     "[语音]",
+//	Video:     "[视频]",
+//	File:      "[文件]",
+//	Text:      "你收到了一条文本消息",
+//	AtText:    "[有人@你]",
+//	GroupMsg:  "你收到一条群聊消息",
+//	Common:    "你收到一条新消息",
+//	SignalMsg: "音视频通话邀请",
+//}
+
+//
+//const FriendAcceptTip = "You have successfully become friends, so start chatting"
+//
+//func GroupIsBanChat(status int32) bool {
+//	if status != GroupStatusMuted {
+//		return false
+//	}
+//	return true
+//}
+//
+//func GroupIsBanPrivateChat(status int32) bool {
+//	if status != GroupBanPrivateChat {
+//		return false
+//	}
+//	return true
+//}
+//
+//const (
+//	TokenKicked = 1001
+//)
+//
+//const BigVersion = "v2"
+
+//Common             = 200
+//GroupMsg           = 201
+//SignalMsg          = 202
+//CustomNotification = 203
+
+//group admin
+//	OrdinaryMember = 0
+//	GroupOwner     = 1
+//	Administrator  = 2
+
+//group application
+//	Application      = 0
+//	AgreeApplication = 1

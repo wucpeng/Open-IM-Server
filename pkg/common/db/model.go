@@ -2,17 +2,17 @@ package db
 
 import (
 	"Open_IM/pkg/common/config"
-	"github.com/dtm-labs/rockscache"
-	"go.mongodb.org/mongo-driver/x/bsonx"
-	"strings"
 	"Open_IM/pkg/utils"
-	"fmt"
-	go_redis "github.com/go-redis/redis/v8"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"gopkg.in/mgo.v2"
-	"time"
 	"context"
+	"fmt"
+	"github.com/dtm-labs/rockscache"
+	go_redis "github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/bsonx"
+	"gopkg.in/mgo.v2"
+	"strings"
+	"time"
 )
 
 var DB DataBases
@@ -83,34 +83,34 @@ func init() {
 	}
 	fmt.Println("mongo driver client init success: ", uri)
 	// mongodb create index
-	if err := createMongoIndex(mongoClient, cSendLog, false, "send_id", "-send_time"); err != nil {
-		fmt.Println("send_id", "-send_time", "index create failed", err.Error())
-		panic(err.Error())
-	}
+	//if err := createMongoIndex(mongoClient, cSendLog, false, "send_id", "-send_time"); err != nil {
+	//	fmt.Println("send_id", "-send_time", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
 	if err := createMongoIndex(mongoClient, cChat, true, "uid"); err != nil {
 		fmt.Println("uid", " index create failed", err.Error())
 		//panic(err.Error())
 	}
-	if err := createMongoIndex(mongoClient, cWorkMoment, true, "-create_time", "work_moment_id"); err != nil {
-		fmt.Println("-create_time", "work_moment_id", "index create failed", err.Error())
-		panic(err.Error())
-	}
-	if err := createMongoIndex(mongoClient, cWorkMoment, true, "work_moment_id"); err != nil {
-		fmt.Println("work_moment_id", "index create failed", err.Error())
-		panic(err.Error())
-	}
-	if err := createMongoIndex(mongoClient, cWorkMoment, false, "user_id", "-create_time"); err != nil {
-		fmt.Println("user_id", "-create_time", "index create failed", err.Error())
-		panic(err.Error())
-	}
-	if err := createMongoIndex(mongoClient, cTag, false, "user_id", "-create_time"); err != nil {
-		fmt.Println("user_id", "-create_time", "index create failed", err.Error())
-		panic(err.Error())
-	}
-	if err := createMongoIndex(mongoClient, cTag, true, "tag_id"); err != nil {
-		fmt.Println("tag_id", "index create failed", err.Error())
-		panic(err.Error())
-	}
+	//if err := createMongoIndex(mongoClient, cWorkMoment, true, "-create_time", "work_moment_id"); err != nil {
+	//	fmt.Println("-create_time", "work_moment_id", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
+	//if err := createMongoIndex(mongoClient, cWorkMoment, true, "work_moment_id"); err != nil {
+	//	fmt.Println("work_moment_id", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
+	//if err := createMongoIndex(mongoClient, cWorkMoment, false, "user_id", "-create_time"); err != nil {
+	//	fmt.Println("user_id", "-create_time", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
+	//if err := createMongoIndex(mongoClient, cTag, false, "user_id", "-create_time"); err != nil {
+	//	fmt.Println("user_id", "-create_time", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
+	//if err := createMongoIndex(mongoClient, cTag, true, "tag_id"); err != nil {
+	//	fmt.Println("tag_id", "index create failed", err.Error())
+	//	panic(err.Error())
+	//}
 	fmt.Println("createMongoIndex success")
 	DB.mongoClient = mongoClient
 
