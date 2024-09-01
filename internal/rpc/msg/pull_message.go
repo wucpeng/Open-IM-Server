@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"Open_IM/pkg/common/constant"
 	commonDB "Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	promePkg "Open_IM/pkg/common/prometheus"
@@ -71,6 +72,12 @@ func (rpc *rpcChat) PullMessageBySeqList(_ context.Context, in *open_im_sdk.Pull
 	} else {
 		promePkg.PromeAdd(promePkg.MsgPullFromRedisSuccessCounter, len(redisMsgList))
 		resp.List = redisMsgList
+	}
+	//群系统消息剔除小红点
+	for _, v := range resp.List {
+		if v.ContentType >= constant.GroupCreatedNotification && v.ContentType <= constant.GroupMemberSetToOrdinaryUserNotification {
+			utils.SetSwitchFromOptions(v.Options, constant.IsUnreadCount, false)
+		}
 	}
 	return resp, nil
 }

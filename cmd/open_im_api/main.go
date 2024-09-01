@@ -61,18 +61,18 @@ func main() {
 	// user routing group, which handles user registration and login services
 	userRouterGroup := r.Group("/user")
 	{
-		userRouterGroup.POST("/update_user_info", user.UpdateUserInfo) //1
-		userRouterGroup.POST("/set_global_msg_recv_opt", user.SetGlobalRecvMessageOpt)     //deprecated
+		userRouterGroup.POST("/update_user_info", user.UpdateUserInfo)                 //1
+		userRouterGroup.POST("/set_global_msg_recv_opt", user.SetGlobalRecvMessageOpt) //deprecated
 		userRouterGroup.POST("/get_users_info", user.GetUsersPublicInfo)
 		userRouterGroup.POST("/get_self_user_info", user.GetSelfUserInfo)
-		userRouterGroup.POST("/get_users_online_status", user.GetUsersOnlineStatus)        //deprecated
+		userRouterGroup.POST("/get_users_online_status", user.GetUsersOnlineStatus) //deprecated
 		userRouterGroup.POST("/get_users_info_from_cache", user.GetUsersInfoFromCache)
 		userRouterGroup.POST("/get_user_friend_from_cache", user.GetFriendIDListFromCache) //deprecated
 		userRouterGroup.POST("/get_black_list_from_cache", user.GetBlackIDListFromCache)   //deprecated
-		userRouterGroup.POST("/get_all_users_uid", manage.GetAllUsersUid) 				   //deprecated
-		userRouterGroup.POST("/account_check", manage.AccountCheck)						   //deprecated
+		userRouterGroup.POST("/get_all_users_uid", manage.GetAllUsersUid)                  //deprecated
+		userRouterGroup.POST("/account_check", manage.AccountCheck)                        //deprecated
 		//	userRouterGroup.POST("/get_users_online_status", manage.GetUsersOnlineStatus) //1
-		userRouterGroup.POST("/get_users", user.GetUsers)									//deprecated
+		userRouterGroup.POST("/get_users", user.GetUsers) //deprecated
 		userRouterGroup.POST("/token_info", user.CheckToken)
 	}
 	//friend routing group
@@ -105,16 +105,16 @@ func main() {
 		groupRouterGroup.POST("/transfer_group", group.TransferGroupOwner)                          //1
 		groupRouterGroup.POST("/get_recv_group_applicationList", group.GetRecvGroupApplicationList) //1
 		groupRouterGroup.POST("/get_user_req_group_applicationList", group.GetUserReqGroupApplicationList)
-		groupRouterGroup.POST("/get_groups_info", group.GetGroupsInfo) 							//1 hzt
-		groupRouterGroup.POST("/kick_group", group.KickGroupMember)    							//1 hzt
+		groupRouterGroup.POST("/get_groups_info", group.GetGroupsInfo) //1 hzt
+		groupRouterGroup.POST("/kick_group", group.KickGroupMember)    //1 hzt
 		//	groupRouterGroup.POST("/get_group_member_list", group.GetGroupMemberList)        //no use
 		groupRouterGroup.POST("/get_group_all_member_list", group.GetGroupAllMemberList) //1 hzt
 		groupRouterGroup.POST("/get_group_members_info", group.GetGroupMembersInfo)      //1 hzt
 		groupRouterGroup.POST("/invite_user_to_group", group.InviteUserToGroup)          //1 hzt
 		groupRouterGroup.POST("/get_joined_group_list", group.GetJoinedGroupList)        // hzt
-		groupRouterGroup.POST("/dismiss_group", group.DismissGroup) // hzt
-		groupRouterGroup.POST("/mute_group_member", group.MuteGroupMember) //hzt
-		groupRouterGroup.POST("/cancel_mute_group_member", group.CancelMuteGroupMember) //hzt
+		groupRouterGroup.POST("/dismiss_group", group.DismissGroup)                      // hzt
+		groupRouterGroup.POST("/mute_group_member", group.MuteGroupMember)               //hzt
+		groupRouterGroup.POST("/cancel_mute_group_member", group.CancelMuteGroupMember)  //hzt
 		groupRouterGroup.POST("/mute_group", group.MuteGroup)
 		groupRouterGroup.POST("/cancel_mute_group", group.CancelMuteGroup)
 		groupRouterGroup.POST("/set_group_member_nickname", group.SetGroupMemberNickname)
@@ -163,6 +163,7 @@ func main() {
 		chatGroup.POST("/batch_send_msg", manage.ManagementBatchSendMsg)
 		chatGroup.POST("/check_msg_is_send_success", manage.CheckMsgIsSendSuccess)
 		chatGroup.POST("/set_msg_min_seq", apiChat.SetMsgMinSeq)
+
 		chatGroup.POST("/group_calendar", apiChat.GetGroupCalendar)
 		chatGroup.POST("/group_forward", apiChat.GetGroupForward)
 		chatGroup.POST("/group_range", apiChat.GetGroupRange)

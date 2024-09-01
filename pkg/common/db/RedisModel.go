@@ -64,7 +64,7 @@ func (d *DataBases) GetAccountCode(account string) (string, error) {
 //	return uint64(seq), err
 //}
 
-//Get the largest Seq
+// Get the largest Seq
 func (d *DataBases) GetUserMaxSeq(uid string) (uint64, error) {
 	key := userIncrSeq + uid
 	//log2.Info("xxxxx", utils.GetSelfFuncName(), key)
@@ -72,19 +72,19 @@ func (d *DataBases) GetUserMaxSeq(uid string) (uint64, error) {
 	return uint64(utils.StringToInt(seq)), err
 }
 
-//set the largest Seq
+// set the largest Seq
 func (d *DataBases) SetUserMaxSeq(uid string, maxSeq uint64) error {
 	key := userIncrSeq + uid
 	return d.RDB.Set(context.Background(), key, maxSeq, 0).Err()
 }
 
-//Set the user's minimum seq
+// Set the user's minimum seq
 func (d *DataBases) SetUserMinSeq(uid string, minSeq uint32) (err error) {
 	key := userMinSeq + uid
 	return d.RDB.Set(context.Background(), key, minSeq, 0).Err()
 }
 
-//Get the smallest Seq
+// Get the smallest Seq
 func (d *DataBases) GetUserMinSeq(uid string) (uint64, error) {
 	key := userMinSeq + uid
 	seq, err := d.RDB.Get(context.Background(), key).Result()
@@ -123,7 +123,7 @@ func (d *DataBases) SetGroupMinSeq(groupID string, minSeq uint32) error {
 	return d.RDB.Set(context.Background(), key, minSeq, 0).Err()
 }
 
-//Store userid and platform class to redis
+// Store userid and platform class to redis
 func (d *DataBases) AddTokenFlag(userID string, platformID int, token string, flag int) error {
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
 	log2.NewDebug("", "add token key is ", key)
@@ -404,7 +404,7 @@ func (d *DataBases) GetSendMsgStatus(operationID string) (int, error) {
 	return status, err
 }
 
-//firebase cloud message 消息推送
+// firebase cloud message 消息推送
 func (d *DataBases) SetFcmToken(account string, platformid int, fcmToken string, expireTime int64) (err error) {
 	key := FcmToken + account + ":" + strconv.Itoa(platformid)
 	return d.RDB.Set(context.Background(), key, fcmToken, time.Duration(expireTime)*time.Second).Err()
@@ -429,7 +429,7 @@ func (d *DataBases) GetUserBadgeUnreadCountSum(uid string) (int, error) {
 	return utils.StringToInt(seq), err
 }
 
-//个推
+// 个推
 func (d *DataBases) SetGetuiToken(token string, expireTime int64) error {
 	return d.RDB.Set(context.Background(), getuiToken, token, time.Duration(expireTime)*time.Second).Err()
 }

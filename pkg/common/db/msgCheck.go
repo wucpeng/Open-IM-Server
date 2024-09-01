@@ -180,6 +180,53 @@ func (d *DataBases) ResetSystemMsgList(uid string, operationID string) (seqMsg [
 	return nil, nil
 }
 
+// 3 查看输出日志 统计内容类型数量
+func (d *DataBases) UserGroupMsgLogs(uid string, groupId string, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid)
+	maxSeq, err := d.GetUserMaxSeq(uid)
+	if err == redis.Nil {
+		return seqMsg, nil
+	}
+	if err != nil {
+		return nil, utils.Wrap(err, "")
+	}
+	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, maxSeq)
+	userChats, cursor, err := d.getUserChats(uid, operationID)
+	if err != nil {
+		return nil, err
+	}
+	//mapContentCount := make(map[int32]int)
+	var msgMaxSeq uint32 = 0
+	for _, userChat := range userChats {
+		cursor.Decode(&userChat)
+		//log.NewInfo(operationID, utils.GetSelfFuncName(), "range", userChat.UID, len(userChat.Msg))
+		for i := 0; i < len(userChat.Msg); i++ {
+			msg := new(open_im_sdk.MsgData)
+			if err = proto.Unmarshal(userChat.Msg[i].Msg, msg); err != nil {
+				log.NewError(operationID, "Unmarshal err", uid, err.Error())
+				return nil, err
+			}
+			if msg.GroupID == groupId {
+				log.NewError(operationID, "UserGroupMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
+			}
+			if msgMaxSeq < msg.Seq {
+				msgMaxSeq = msg.Seq
+			}
+			////log.NewError(operationID, "UserMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
+			//if v, ok := mapContentCount[msg.ContentType]; ok {
+			//	mapContentCount[msg.ContentType] = v + 1
+			//} else {
+			//	mapContentCount[msg.ContentType] = 1
+			//}
+		}
+	}
+
+	if maxSeq != uint64(msgMaxSeq) {
+		log.NewError(operationID, utils.GetSelfFuncName(), "redis seq no match", uid, maxSeq, msgMaxSeq)
+	}
+	return nil, nil
+}
+
 // 用于计算群组消息日志 历史消息等 操作
 func (d *DataBases) GetGroupAllMsgList(uid string, groupID string, startTime int64, endTime int64, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	//log.NewInfo(operationID, utils.GetSelfFuncName(), uid, groupID)

@@ -1,9 +1,3 @@
-/*
-** description("").
-** copyright('tuoyun,www.tuoyun.net').
-** author("fg,Gordon@tuoyun.net").
-** time(2021/3/4 11:18).
- */
 package im_mysql_msg_model
 
 import (
