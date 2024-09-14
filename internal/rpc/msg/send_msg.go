@@ -281,15 +281,39 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 		}
 		//log.NewError(pb.OperationID, "SendMsg 3", time.Since(t1))
 		var memberUserIDList []string
-		if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
-			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
-			return returnMsg(&replay, pb, errCode, errMsg, "", 0)
-		}
-		//log.Info(pb.OperationID, "GetGroupAllMember userID list", memberUserIDList, "len: ", len(memberUserIDList))
-		//t1 = time.Now()
-		var addUidList []string
-		switch pb.MsgData.ContentType {
-		case constant.MemberKickedNotification:
+		//if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
+		//	promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
+		//	return returnMsg(&replay, pb, errCode, errMsg, "", 0)
+		//}
+		////log.Info(pb.OperationID, "GetGroupAllMember userID list", memberUserIDList, "len: ", len(memberUserIDList))
+		////t1 = time.Now()
+		//var addUidList []string
+		//switch pb.MsgData.ContentType {
+		//case constant.MemberKickedNotification:
+		//	var tips sdk_ws.TipsComm
+		//	var memberKickedTips sdk_ws.MemberKickedTips
+		//	err := proto.Unmarshal(pb.MsgData.Content, &tips)
+		//	if err != nil {
+		//		log.Error(pb.OperationID, "Unmarshal err", err.Error())
+		//	}
+		//	err = proto.Unmarshal(tips.Detail, &memberKickedTips)
+		//	if err != nil {
+		//		log.Error(pb.OperationID, "Unmarshal err", err.Error())
+		//	}
+		//	//log.Info(pb.OperationID, "data is ", memberKickedTips)
+		//	for _, v := range memberKickedTips.KickedUserList {
+		//		addUidList = append(addUidList, v.UserID)
+		//	}
+		//case constant.MemberQuitNotification:
+		//	addUidList = append(addUidList, pb.MsgData.SendID)
+		//default:
+		//}
+		//
+		//if len(addUidList) > 0 {
+		//	memberUserIDList = append(memberUserIDList, addUidList...)
+		//}
+
+		if pb.MsgData.ContentType == constant.MemberKickedNotification {
 			var tips sdk_ws.TipsComm
 			var memberKickedTips sdk_ws.MemberKickedTips
 			err := proto.Unmarshal(pb.MsgData.Content, &tips)
@@ -302,14 +326,15 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			}
 			//log.Info(pb.OperationID, "data is ", memberKickedTips)
 			for _, v := range memberKickedTips.KickedUserList {
-				addUidList = append(addUidList, v.UserID)
+				memberUserIDList = append(memberUserIDList, v.UserID)
 			}
-		case constant.MemberQuitNotification:
-			addUidList = append(addUidList, pb.MsgData.SendID)
-		default:
-		}
-		if len(addUidList) > 0 {
-			memberUserIDList = append(memberUserIDList, addUidList...)
+		} else if pb.MsgData.ContentType == constant.MemberQuitNotification {
+			memberUserIDList = append(memberUserIDList, pb.MsgData.SendID)
+		} else {
+			if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
+				promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
+				return returnMsg(&replay, pb, errCode, errMsg, "", 0)
+			}
 		}
 
 		if callbackResp.GlobalShield == 1 {

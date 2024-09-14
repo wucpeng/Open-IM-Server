@@ -127,14 +127,15 @@ func groupNotification(contentType int32, m proto.Message, sendID, groupID, recv
 	if from != nil {
 		nickname = from.Nickname
 	}
-
-	to, err := imdb.GetUserByUserID(recvUserID)
-	if err != nil {
-		log.NewWarn(operationID, "GetUserByUserID failed ", err.Error(), recvUserID)
-	}
 	toNickname := ""
-	if to != nil {
-		toNickname = to.Nickname
+	if recvUserID != "" {
+		to, err := imdb.GetUserByUserID(recvUserID)
+		if err != nil {
+			log.NewWarn(operationID, "GetUserByUserID failed ", err.Error(), recvUserID)
+		}
+		if to != nil {
+			toNickname = to.Nickname
+		}
 	}
 
 	cn := config.Config.Notification
@@ -208,7 +209,7 @@ func groupNotification(contentType int32, m proto.Message, sendID, groupID, recv
 	Notification(&n)
 }
 
-//创建群后调用
+// 创建群后调用
 func GroupCreatedNotification(operationID, opUserID, groupID string, initMemberList []string) {
 	GroupCreatedTips := open_im_sdk.GroupCreatedTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}, GroupOwnerUser: &open_im_sdk.GroupMemberFullInfo{}}
@@ -240,8 +241,9 @@ func GroupCreatedNotification(operationID, opUserID, groupID string, initMemberL
 	groupNotification(constant.GroupCreatedNotification, &GroupCreatedTips, opUserID, groupID, "", operationID)
 }
 
-//群信息改变后掉用
-//groupName := ""
+// 群信息改变后掉用
+// groupName := ""
+//
 //	notification := ""
 //	introduction := ""
 //	faceURL := ""
@@ -371,15 +373,17 @@ func GroupMemberCancelMutedNotification(operationID, opUserID, groupID, groupMem
 	groupNotification(constant.GroupMemberCancelMutedNotification, &tips, opUserID, groupID, "", operationID)
 }
 
-//message ReceiveJoinApplicationTips{
-//  GroupInfo Group = 1;
-//  PublicUserInfo Applicant  = 2;
-//  string 	Reason = 3;
-//}  apply->all managers GroupID              string   `protobuf:"bytes,1,opt,name=GroupID" json:"GroupID,omitempty"`
+//	message ReceiveJoinApplicationTips{
+//	 GroupInfo Group = 1;
+//	 PublicUserInfo Applicant  = 2;
+//	 string 	Reason = 3;
+//	}  apply->all managers GroupID              string   `protobuf:"bytes,1,opt,name=GroupID" json:"GroupID,omitempty"`
+//
 //	ReqMessage           string   `protobuf:"bytes,2,opt,name=ReqMessage" json:"ReqMessage,omitempty"`
 //	OpUserID             string   `protobuf:"bytes,3,opt,name=OpUserID" json:"OpUserID,omitempty"`
 //	OperationID          string   `protobuf:"bytes,4,opt,name=OperationID" json:"OperationID,omitempty"`
-//申请进群后调用
+//
+// 申请进群后调用
 func JoinGroupApplicationNotification(req *pbGroup.JoinGroupReq) {
 	JoinGroupApplicationTips := open_im_sdk.JoinGroupApplicationTips{Group: &open_im_sdk.GroupInfo{}, Applicant: &open_im_sdk.PublicUserInfo{}}
 	err := setGroupInfo(req.GroupID, JoinGroupApplicationTips.Group)
@@ -420,13 +424,14 @@ func MemberQuitNotification(req *pbGroup.QuitGroupReq) {
 
 }
 
-//message ApplicationProcessedTips{
-//  GroupInfo Group = 1;
-//  GroupMemberFullInfo OpUser = 2;
-//  int32 Result = 3;
-//  string 	Reason = 4;
-//}
-//处理进群请求后调用
+//	message ApplicationProcessedTips{
+//	 GroupInfo Group = 1;
+//	 GroupMemberFullInfo OpUser = 2;
+//	 int32 Result = 3;
+//	 string 	Reason = 4;
+//	}
+//
+// 处理进群请求后调用
 func GroupApplicationAcceptedNotification(req *pbGroup.GroupApplicationResponseReq) {
 	GroupApplicationAcceptedTips := open_im_sdk.GroupApplicationAcceptedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}, HandleMsg: req.HandledMsg}
 	if err := setGroupInfo(req.GroupID, GroupApplicationAcceptedTips.Group); err != nil {
@@ -483,13 +488,14 @@ func GroupDismissedNotification(req *pbGroup.DismissGroupReq) {
 	groupNotification(constant.GroupDismissedNotification, &tips, req.OpUserID, req.GroupID, "", req.OperationID)
 }
 
-//message MemberKickedTips{
-//  GroupInfo Group = 1;
-//  GroupMemberFullInfo OpUser = 2;
-//  GroupMemberFullInfo KickedUser = 3;
-//  uint64 OperationTime = 4;
-//}
-//被踢后调用
+//	message MemberKickedTips{
+//	 GroupInfo Group = 1;
+//	 GroupMemberFullInfo OpUser = 2;
+//	 GroupMemberFullInfo KickedUser = 3;
+//	 uint64 OperationTime = 4;
+//	}
+//
+// 被踢后调用
 func MemberKickedNotification(req *pbGroup.KickGroupMemberReq, kickedUserIDList []string) {
 	MemberKickedTips := open_im_sdk.MemberKickedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
 	if err := setGroupInfo(req.GroupID, MemberKickedTips.Group); err != nil {
@@ -515,13 +521,14 @@ func MemberKickedNotification(req *pbGroup.KickGroupMemberReq, kickedUserIDList 
 	//}
 }
 
-//message MemberInvitedTips{
-//  GroupInfo Group = 1;
-//  GroupMemberFullInfo OpUser = 2;
-//  GroupMemberFullInfo InvitedUser = 3;
-//  uint64 OperationTime = 4;
-//}
-//被邀请进群后调用
+//	message MemberInvitedTips{
+//	 GroupInfo Group = 1;
+//	 GroupMemberFullInfo OpUser = 2;
+//	 GroupMemberFullInfo InvitedUser = 3;
+//	 uint64 OperationTime = 4;
+//	}
+//
+// 被邀请进群后调用
 func MemberInvitedNotification(operationID, groupID, opUserID, reason string, invitedUserIDList []string) {
 	MemberInvitedTips := open_im_sdk.MemberInvitedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
 	if err := setGroupInfo(groupID, MemberInvitedTips.Group); err != nil {
@@ -557,12 +564,13 @@ func MemberInvitedNotification(operationID, groupID, opUserID, reason string, in
 
 //群成员退群后调用
 
-//message MemberEnterTips{
-//  GroupInfo Group = 1;
-//  GroupMemberFullInfo EntrantUser = 2;
-//  uint64 OperationTime = 3;
-//}
-//群成员主动申请进群，管理员同意后调用，
+//	message MemberEnterTips{
+//	 GroupInfo Group = 1;
+//	 GroupMemberFullInfo EntrantUser = 2;
+//	 uint64 OperationTime = 3;
+//	}
+//
+// 群成员主动申请进群，管理员同意后调用，
 func MemberEnterNotification(req *pbGroup.GroupApplicationResponseReq) {
 	MemberEnterTips := open_im_sdk.MemberEnterTips{Group: &open_im_sdk.GroupInfo{}, EntrantUser: &open_im_sdk.GroupMemberFullInfo{}}
 	if err := setGroupInfo(req.GroupID, MemberEnterTips.Group); err != nil {

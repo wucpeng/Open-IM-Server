@@ -275,7 +275,7 @@ notification:
   groupCreated:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: true
       title: "create group title" # xx create the group
@@ -287,7 +287,7 @@ notification:
   groupInfoSet:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupInfoSet title"
@@ -311,7 +311,7 @@ notification:
   memberQuit:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "memberQuit title"
@@ -323,7 +323,7 @@ notification:
   groupApplicationAccepted:
     conversation:
       reliabilityLevel: 2
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupApplicationAccepted title"
@@ -347,7 +347,7 @@ notification:
   groupOwnerTransferred:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupOwnerTransferred title"
@@ -359,7 +359,7 @@ notification:
   memberKicked:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "memberKicked title"
@@ -371,7 +371,7 @@ notification:
   memberInvited:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "memberInvited title"
@@ -383,7 +383,7 @@ notification:
   memberEnter:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "memberEnter title"
@@ -395,7 +395,7 @@ notification:
   groupDismissed:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupDismissed title"
@@ -408,7 +408,7 @@ notification:
   groupMuted:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupMuted title"
@@ -433,7 +433,7 @@ notification:
   groupMemberMuted:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupMemberMuted title"
@@ -445,7 +445,7 @@ notification:
   groupMemberCancelMuted:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: false
       title: "groupMemberCancelMuted title"
@@ -610,7 +610,7 @@ notification:
   conversationSetPrivate:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
     offlinePush:
       switch: true
       title: "burn after reading"
@@ -624,7 +624,7 @@ notification:
   workMomentsNotification:
     conversation:
       reliabilityLevel: 2
-      unreadCount: true
+      unreadCount: false
       offlinePush:
         switch: true
         title: "burn after reading"
@@ -638,7 +638,7 @@ notification:
   joinDepartmentNotification:
     conversation:
       reliabilityLevel: 3
-      unreadCount: true
+      unreadCount: false
       offlinePush:
         switch: false
         title: "welcome user join department"

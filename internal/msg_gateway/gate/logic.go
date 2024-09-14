@@ -58,10 +58,10 @@ func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {
 		promePkg.PromeInc(promePkg.PullMsgBySeqListTotalCounter)
 	case constant.WsLogoutMsg:
 		log.NewInfo(m.OperationID, "conn.Close()", m.SendID, m.MsgIncr, m.ReqIdentifier)
-		err = conn.Close()
-		if err != nil {
-			log.NewError("", "ws close err", err.Error())
-		}
+		//err = conn.Close()
+		//if err != nil {
+		//	log.NewError("", "ws close err", err.Error())
+		//}
 	default:
 		log.Error(m.OperationID, "ReqIdentifier failed ", m.SendID, m.MsgIncr, m.ReqIdentifier)
 	}

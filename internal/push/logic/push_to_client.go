@@ -60,6 +60,10 @@ func MsgToUser(pushMsg *pbPush.PushMsgReq) {
 	//	return
 	//}
 
+	if pushMsg.MsgData.ContentType >= constant.GroupCreatedNotification && pushMsg.MsgData.ContentType <= constant.GroupMemberSetToOrdinaryUserNotification {
+		utils.SetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsUnreadCount, false)
+	}
+
 	//Online push message
 	//log.Info(pushMsg.OperationID, "len  grpc", len(grpcCons), grpcCons)
 	for _, v := range grpcCons {

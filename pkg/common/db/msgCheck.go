@@ -70,6 +70,7 @@ func (d *DataBases) UserMsgLogs(uid string, operationID string) (seqMsg []*open_
 			if msgMaxSeq < msg.Seq {
 				msgMaxSeq = msg.Seq
 			}
+			log.NewError(operationID, "UserGroupMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
 			//log.NewError(operationID, "UserMsgLogs", i, msg.Seq, msg.ContentType, utils.UnixMillSecondToTime(msg.SendTime))
 			if v, ok := mapContentCount[msg.ContentType]; ok {
 				mapContentCount[msg.ContentType] = v + 1
