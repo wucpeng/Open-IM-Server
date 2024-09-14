@@ -4,18 +4,23 @@ package constant
 //fixme  4<--->OSX  5<--->Web  6<--->MiniWeb 7<--->Linux
 
 // service 11--20
+import (
+	"strconv"
+)
 
 const (
 	//Platform ID
-	IOSPlatformID        = 1
-	AndroidPlatformID    = 2
-	WindowsPlatformID    = 3
-	OSXPlatformID        = 4
-	WebPlatformID        = 5
-	MiniWebPlatformID    = 6
-	LinuxPlatformID      = 7
-	AndroidPadPlatformID = 8
-	IPadPlatformID       = 9
+	IOSPlatformID         = 1
+	AndroidPlatformID     = 2
+	WindowsPlatformID     = 3
+	OSXPlatformID         = 4
+	WebPlatformID         = 5
+	MiniWebPlatformID     = 6
+	LinuxPlatformID       = 7
+	AndroidPadPlatformID  = 8
+	IPadPlatformID        = 9
+	CustomPlatformIDBegin = 11
+	CustomPlatformIDEnd   = 30
 
 	//Platform string match to Platform ID
 	IOSPlatformStr        = "IOS"
@@ -27,6 +32,7 @@ const (
 	LinuxPlatformStr      = "Linux"
 	AndroidPadPlatformStr = "APad"
 	IPadPlatformStr       = "IPad"
+	CustomPlatformStr     = "Custom"
 
 	//terminal types
 	TerminalPC     = "PC"
@@ -63,6 +69,15 @@ var Platform2class = map[string]string{
 	WindowsPlatformStr: TerminalPC,
 	OSXPlatformStr:     TerminalPC,
 	LinuxPlatformStr:   TerminalPC,
+}
+
+func init() {
+	for i := CustomPlatformIDBegin; i < CustomPlatformIDEnd; i++ {
+		name := CustomPlatformStr + strconv.Itoa(i)
+		PlatformID2Name[i] = name
+		PlatformName2ID[name] = i
+		Platform2class[name] = TerminalPC
+	}
 }
 
 func PlatformIDToName(num int) string {

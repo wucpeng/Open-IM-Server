@@ -89,7 +89,13 @@ message MultiTerminalLoginCheckResp{
     string  errMsg = 2;
 }
 
-
+message OnlineUserReq {
+  string operationID = 1;
+  string userID = 2;
+}
+message OnlineUserResp{
+  repeated int32 platformIDs = 1;
+}
 service relay {
   rpc OnlinePushMsg(OnlinePushMsgReq) returns(OnlinePushMsgResp);
   rpc GetUsersOnlineStatus(GetUsersOnlineStatusReq) returns(GetUsersOnlineStatusResp);
@@ -97,5 +103,6 @@ service relay {
   rpc SuperGroupOnlineBatchPushOneMsg(OnlineBatchPushOneMsgReq) returns(OnlineBatchPushOneMsgResp);
   rpc KickUserOffline(KickUserOfflineReq) returns(KickUserOfflineResp);
   rpc MultiTerminalLoginCheck(MultiTerminalLoginCheckReq) returns(MultiTerminalLoginCheckResp);
+  rpc GetUserOnlinePlatformIds(OnlineUserReq) returns(OnlineUserResp);
 }
 

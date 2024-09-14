@@ -219,7 +219,8 @@ func (r *RPCServer) KickUserOffline(_ context.Context, req *pbRelay.KickUserOffl
 	}
 	return &pbRelay.KickUserOfflineResp{}, nil
 }
-//各个rpc踢人
+
+// 各个rpc踢人
 func (r *RPCServer) MultiTerminalLoginCheck(ctx context.Context, req *pbRelay.MultiTerminalLoginCheckReq) (*pbRelay.MultiTerminalLoginCheckResp, error) {
 	ws.MultiTerminalLoginCheckerWithLock(req.UserID, int(req.PlatformID), req.Token, req.OperationID)
 	return &pbRelay.MultiTerminalLoginCheckResp{}, nil
@@ -260,12 +261,7 @@ func genPlatformArray() (array []int) {
 	return array
 }
 
-
-
-
-
-
-//未使用
+// 未使用
 func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
 	log.NewInfo(req.OperationID, "BatchPushMsgToUser is arriving", req.String())
 	var singleUserResult []*pbRelay.SingelMsgToUserResultList
@@ -280,17 +276,9 @@ func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.Online
 		for k, _ := range userConnMap {
 			platformList = append(platformList, k)
 		}
-		//log.Debug(req.OperationID, "GetSingleUserMsgForPushPlatforms begin", req.MsgData.Seq, v, platformList, req.MsgData.String())
 		needPushMapList := r.GetSingleUserMsgForPushPlatforms(req.OperationID, req.MsgData, v, platformList)
-		//log.Debug(req.OperationID, "GetSingleUserMsgForPushPlatforms end", req.MsgData.Seq, v, platformList, len(needPushMapList))
 		for platform, list := range needPushMapList {
 			if list != nil {
-				//log.Debug(req.OperationID, "needPushMapList ", "userID: ", v, "platform: ", platform, "push msg num:")
-				//for _, v := range list {
-				//	log.Debug(req.OperationID, "req.MsgData.MsgDataList begin", "len: ", len(req.MsgData.MsgDataList), v.String())
-				//	req.MsgData.MsgDataList = append(req.MsgData.MsgDataList, v)
-				//	log.Debug(req.OperationID, "req.MsgData.MsgDataList end", "len: ", len(req.MsgData.MsgDataList))
-				//}
 				msgBytes, err := proto.Marshal(list)
 				if err != nil {
 					log.Error(req.OperationID, "proto marshal err", err.Error())
@@ -339,7 +327,7 @@ func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.Online
 	}, nil
 }
 
-//未使用
+// 未使用
 func (r *RPCServer) OnlinePushMsg(_ context.Context, in *pbRelay.OnlinePushMsgReq) (*pbRelay.OnlinePushMsgResp, error) {
 	log.NewInfo(in.OperationID, "PushMsgToUser is arriving", in.String())
 	var resp []*pbRelay.SingleMsgToUserPlatform
@@ -381,5 +369,20 @@ func (r *RPCServer) OnlinePushMsg(_ context.Context, in *pbRelay.OnlinePushMsgRe
 	}
 	return &pbRelay.OnlinePushMsgResp{
 		Resp: resp,
+	}, nil
+}
+
+func (r *RPCServer) GetUserOnlinePlatformIds(_ context.Context, req *pbRelay.OnlineUserReq) (*pbRelay.OnlineUserResp, error) {
+	var platIds []int32
+	userConnMap := ws.getUserAllCons(req.UserID)
+	//log.NewInfo(req.OperationID, "userConnMap", userConnMap, req.UserID)
+	for platform, userConn := range userConnMap {
+		//log.NewInfo(req.OperationID, "GetUserOnlinePlatformIds", userConn, platform)
+		if userConn != nil {
+			platIds = append(platIds, int32(platform))
+		}
+	}
+	return &pbRelay.OnlineUserResp{
+		PlatformIDs: platIds,
 	}, nil
 }

@@ -174,6 +174,7 @@ func main() {
 	{
 		initGroup.POST("/set_client_config", clientInit.SetClientInitConfig)
 		initGroup.POST("/get_client_config", clientInit.GetClientInitConfig)
+		initGroup.POST("/user_online_platform", clientInit.GetClientPlatformIds)
 	}
 
 	//go apiThird.MinioInit()

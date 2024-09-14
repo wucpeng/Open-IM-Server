@@ -107,7 +107,8 @@ func (ws *WServer) writeMsg(conn *UserConn, a int, msg []byte) error {
 	conn.SetWriteDeadline(time.Now().Add(time.Duration(60) * time.Second))
 	return conn.WriteMessage(a, msg)
 }
-//go 协程 调用 1
+
+// go 协程 调用 1
 func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int32, token string, operationID string) {
 	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), operationID)
 	log.NewInfo(operationID, utils.GetSelfFuncName(), "args  grpcCons: ", userID, platformID, len(grpcCons), grpcCons)
@@ -132,6 +133,7 @@ func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int
 		log.NewInfo(operationID, "MultiTerminalLoginCheck resp ", resp.String())
 	}
 }
+
 // rpc 调用2
 func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int, token string, operationID string) {
 	rwLock.Lock()
@@ -190,7 +192,8 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 	case constant.WebAndOther:
 	}
 }
-//本地处理
+
+// 本地处理
 func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn *UserConn, token string, operationID string) {
 	log.NewInfo(operationID, utils.GetSelfFuncName(), " rpc args: ", uid, platformID, token, operationID)
 	switch config.Config.MultiLoginPolicy {
@@ -362,9 +365,19 @@ func (ws *WServer) getUserConn(uid string, platform int) *UserConn {
 	}
 	return nil
 }
+
+//func (ws *WServer) logUserCons() {
+//	for uid, cons := range ws.wsUserToConn {
+//		for plat, _ := range cons {
+//			log.Error("logUserCons", "logUserCons", uid, plat)
+//		}
+//	}
+//}
+
 func (ws *WServer) getUserAllCons(uid string) map[int]*UserConn {
 	rwLock.RLock()
 	defer rwLock.RUnlock()
+	//ws.logUserCons()
 	if connMap, ok := ws.wsUserToConn[uid]; ok {
 		newConnMap := make(map[int]*UserConn)
 		for k, v := range connMap {
@@ -457,7 +470,6 @@ func (ws *WServer) headerCheck(w http.ResponseWriter, r *http.Request, operation
 //	conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 //	return conn.WriteMessage(a, msg)
 //}
-
 
 //func (ws *WServer) getUserUid(conn *UserConn) (uid string, platform int) {
 //	rwLock.RLock()

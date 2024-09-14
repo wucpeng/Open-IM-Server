@@ -403,7 +403,7 @@ service group{
   rpc MuteGroup(MuteGroupReq) returns(MuteGroupResp);
   rpc CancelMuteGroup(CancelMuteGroupReq) returns(CancelMuteGroupResp);
 
-  rpc MuteGroupJia(MuteGroupReq) returns(MuteGroupResp);
+  //rpc MuteGroupJia(MuteGroupReq) returns(MuteGroupResp);
 
   rpc SetGroupMemberNickname(SetGroupMemberNicknameReq) returns (SetGroupMemberNicknameResp);
   rpc GetJoinedSuperGroupList(GetJoinedSuperGroupListReq) returns (GetJoinedSuperGroupListResp);

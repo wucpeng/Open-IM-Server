@@ -19,3 +19,14 @@ type GetClientInitConfigResp struct {
 		DiscoverPageURL string `json:"discoverPageURL"`
 	} `json:"data"`
 }
+type GetClientPlatformIdsReq struct {
+	OperationID string `json:"operationID"  binding:"required"`
+	UserID      string `json:"userID"  binding:"required"`
+}
+
+type GetClientPlatformIdsResp struct {
+	CommResp
+	Data struct {
+		PlatformIDs []int32 `json:"platformIDs"`
+	} `json:"data"`
+}
